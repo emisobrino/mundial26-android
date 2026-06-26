@@ -13,12 +13,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -214,7 +216,7 @@ private fun BackButton(onBack: () -> Unit, modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
             .size(40.dp)
-            .clip(androidx.compose.foundation.shape.CircleShape)
+            .clip(CircleShape)
             .background(MundialTheme.colors.surface),
         contentAlignment = Alignment.Center
     ) {
@@ -335,7 +337,7 @@ private fun FichaSection(star: Star, modifier: Modifier = Modifier) {
             rows.forEachIndexed { index, (label, value) ->
                 FichaRow(label = label, value = value)
                 if (index != rows.lastIndex) {
-                    androidx.compose.material3.HorizontalDivider(color = MundialTheme.colors.border)
+                    HorizontalDivider(color = MundialTheme.colors.border)
                 }
             }
         }
