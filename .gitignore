@@ -11,3 +11,5 @@
 *.aab
 /app/build/
 tools/*.class
+tools/shot-*.png
+tools/playstore-512.png
