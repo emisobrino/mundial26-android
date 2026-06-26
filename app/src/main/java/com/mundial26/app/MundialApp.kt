@@ -11,11 +11,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.mundial26.app.di.AppContainer
+import com.mundial26.app.ui.home.HomeScreen
+import com.mundial26.app.ui.home.HomeViewModel
 import com.mundial26.app.ui.navigation.BottomNav
 import com.mundial26.app.ui.navigation.TopDestination
 import com.mundial26.app.ui.theme.MundialTheme
@@ -46,7 +49,25 @@ fun MundialApp(container: AppContainer) {
             startDestination = TopDestination.HOME.route,
             modifier = Modifier.padding(innerPadding)
         ) {
-            composable(TopDestination.HOME.route) { TabPlaceholder(TopDestination.HOME.label) }
+            composable(TopDestination.HOME.route) {
+                val homeViewModel: HomeViewModel = viewModel(
+                    factory = HomeViewModel.Factory(
+                        container.matchRepository,
+                        container.teamRepository,
+                        container.newsRepository
+                    )
+                )
+                HomeScreen(
+                    viewModel = homeViewModel,
+                    onNavigateToTab = { route ->
+                        navController.navigate(route) {
+                            launchSingleTop = true
+                            restoreState = true
+                            popUpTo(TopDestination.HOME.route) { saveState = true }
+                        }
+                    }
+                )
+            }
             composable(TopDestination.MATCHES.route) { TabPlaceholder(TopDestination.MATCHES.label) }
             composable(TopDestination.TEAMS.route) { TabPlaceholder(TopDestination.TEAMS.label) }
             composable(TopDestination.NEWS.route) { TabPlaceholder(TopDestination.NEWS.label) }
