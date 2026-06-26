@@ -19,6 +19,8 @@ import androidx.navigation.compose.rememberNavController
 import com.mundial26.app.di.AppContainer
 import com.mundial26.app.ui.home.HomeScreen
 import com.mundial26.app.ui.home.HomeViewModel
+import com.mundial26.app.ui.matches.MatchesScreen
+import com.mundial26.app.ui.matches.MatchesViewModel
 import com.mundial26.app.ui.navigation.BottomNav
 import com.mundial26.app.ui.navigation.TopDestination
 import com.mundial26.app.ui.theme.MundialTheme
@@ -68,7 +70,10 @@ fun MundialApp(container: AppContainer) {
                     }
                 )
             }
-            composable(TopDestination.MATCHES.route) { TabPlaceholder(TopDestination.MATCHES.label) }
+            composable(TopDestination.MATCHES.route) {
+                val vm: MatchesViewModel = viewModel(factory = MatchesViewModel.Factory(container.matchRepository))
+                MatchesScreen(viewModel = vm)
+            }
             composable(TopDestination.TEAMS.route) { TabPlaceholder(TopDestination.TEAMS.label) }
             composable(TopDestination.NEWS.route) { TabPlaceholder(TopDestination.NEWS.label) }
         }
