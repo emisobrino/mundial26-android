@@ -32,11 +32,15 @@ class MatchDetailViewModel(
     private fun load() {
         _uiState.value = MatchDetailUiState.Loading
         viewModelScope.launch {
-            val match = matchRepository.match(matchId)
-            _uiState.value = if (match != null) {
-                MatchDetailUiState.Success(match)
-            } else {
-                MatchDetailUiState.Error("Partido no encontrado")
+            try {
+                val match = matchRepository.match(matchId)
+                _uiState.value = if (match != null) {
+                    MatchDetailUiState.Success(match)
+                } else {
+                    MatchDetailUiState.Error("Partido no encontrado")
+                }
+            } catch (e: Exception) {
+                _uiState.value = MatchDetailUiState.Error(e.message ?: "Error al cargar el partido")
             }
         }
     }
