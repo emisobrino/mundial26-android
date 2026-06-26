@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import com.mundial26.app.data.mock.MockData
 import com.mundial26.app.domain.model.Match
 import com.mundial26.app.domain.model.MatchStatus
+import com.mundial26.app.domain.model.Nations
 import com.mundial26.app.ui.theme.MundialTheme
 
 /**
@@ -260,12 +261,10 @@ private fun TeamLine(name: String, iso: String, code: String) {
 }
 
 // Los nombres completos no están en el modelo Match (solo códigos); se resuelven
-// contra MockData.teams cuando existe, con fallback al código.
-private fun Match.teamANameOrCode(): String =
-    MockData.teams.find { it.code == teamA }?.name ?: teamA
+// contra la tabla de referencia de naciones del dominio, con fallback al código.
+private fun Match.teamANameOrCode(): String = Nations.name(teamA)
 
-private fun Match.teamBNameOrCode(): String =
-    MockData.teams.find { it.code == teamB }?.name ?: teamB
+private fun Match.teamBNameOrCode(): String = Nations.name(teamB)
 
 @Preview(showBackground = true)
 @Composable
