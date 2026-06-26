@@ -56,41 +56,44 @@ public class IconGen {
         return g;
     }
 
-    /** Dibuja "26" + franja tricolor centrados, escalados a 'scale' del lienzo. */
+    /** Dibuja "26" + franja tricolor centrados ópticamente, escalados a 'scale' del lienzo. */
     static void drawBadge(Graphics2D g, int size, double scale) {
         double cx = size / 2.0, cy = size / 2.0;
         double content = size * scale;
 
         // Tipografía "26" italic + bold
-        Font font = pickFont((int) (content * 0.62));
+        Font font = pickFont((int) (content * 0.66));
         g.setFont(font);
         FontMetrics fm = g.getFontMetrics();
         String txt = "26";
-        int tw = fm.stringWidth(txt);
-        int ascent = fm.getAscent(), descent = fm.getDescent();
-        double textH = ascent + descent;
 
-        // Reservamos una franja tricolor debajo del texto
-        double stripeH = content * 0.085;
-        double stripeW = content * 0.62;
-        double gap = content * 0.06;
-        double blockH = textH + gap + stripeH;
+        // Medimos los límites VISUALES reales de los glifos (no las métricas de la
+        // fuente, que en peso Black incluyen mucho ascenso/descenso y descentran).
+        java.awt.font.GlyphVector gv = font.createGlyphVector(g.getFontRenderContext(), txt);
+        java.awt.geom.Rectangle2D vb = gv.getVisualBounds();
+        double glyphW = vb.getWidth(), glyphH = vb.getHeight();
+
+        // Bloque = dígitos + gap + franja, centrado verticalmente como unidad.
+        double stripeH = content * 0.075;
+        double stripeW = glyphW * 0.95;
+        double gap = content * 0.055;
+        double blockH = glyphH + gap + stripeH;
         double top = cy - blockH / 2.0;
 
-        // "26" blanco
+        // "26" blanco: posicionamos por los límites visuales para centrar de verdad.
         g.setColor(Color.WHITE);
-        float baseline = (float) (top + ascent);
-        g.drawString(txt, (float) (cx - tw / 2.0), baseline);
+        float gx = (float) (cx - vb.getCenterX());
+        float gy = (float) (top - vb.getY());
+        g.drawGlyphVector(gv, gx, gy);
 
-        // Franja tricolor (3 segmentos iguales), redondeada
-        double sy = top + textH + gap;
+        // Franja tricolor (3 segmentos iguales), extremos redondeados.
+        double sy = top + glyphH + gap;
         double sx = cx - stripeW / 2.0;
         double seg = stripeW / 3.0;
         double r = stripeH / 2.0;
         Color[] cols = {GREEN, RED, BLUE};
         for (int i = 0; i < 3; i++) {
             g.setColor(cols[i]);
-            // esquinas redondeadas solo en extremos; usamos rects con leve radio
             double rr = (i == 0 || i == 2) ? r : 0;
             g.fill(new RoundRectangle2D.Double(sx + i * seg, sy, seg + (i < 2 ? 1 : 0), stripeH, rr, rr));
         }
