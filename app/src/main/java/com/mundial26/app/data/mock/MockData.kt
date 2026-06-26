@@ -21,7 +21,8 @@ object MockData {
             rank = 1, tag = "Campeón defensor", flag = "ar",
             styleLabel = "Posesión vertical",
             star = Star(10, "Lionel Messi", "Delantero / Capitán",
-                "Cerebro creativo del equipo: maneja los tiempos y aparece en los momentos decisivos."),
+                "Cerebro creativo del equipo: maneja los tiempos y aparece en los momentos decisivos.",
+                stats = StarStats(pj = 6, goals = 4, assists = 3, rating = 8.4, club = "Inter Miami", age = 38, marketValue = "€20M")),
             pros = listOf(
                 "Jerarquía y experiencia en partidos clave",
                 "Mediocampo equilibrado y muy trabajador",
@@ -39,7 +40,8 @@ object MockData {
             rank = 2, tag = "Candidato al título", flag = "fr",
             styleLabel = "Transiciones rápidas",
             star = Star(10, "Kylian Mbappé", "Delantero",
-                "Velocidad y gol desequilibrantes: capaz de decidir un partido en una sola jugada."),
+                "Velocidad y gol desequilibrantes: capaz de decidir un partido en una sola jugada.",
+                stats = StarStats(pj = 6, goals = 5, assists = 2, rating = 8.7, club = "Real Madrid", age = 27, marketValue = "€180M")),
             pros = listOf(
                 "Velocidad explosiva en ataque",
                 "Profundidad de plantel enorme",
@@ -57,7 +59,8 @@ object MockData {
             rank = 3, tag = "Candidato al título", flag = "br",
             styleLabel = "Ataque por bandas",
             star = Star(7, "Vinícius Jr.", "Extremo",
-                "Desborde y uno contra uno: el principal arma de profundidad por la izquierda."),
+                "Desborde y uno contra uno: el principal arma de profundidad por la izquierda.",
+                stats = StarStats(pj = 6, goals = 3, assists = 4, rating = 8.2, club = "Real Madrid", age = 25, marketValue = "€150M")),
             pros = listOf(
                 "Talento individual desbordante",
                 "Peligro constante por las bandas",

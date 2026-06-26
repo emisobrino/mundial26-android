@@ -6,7 +6,23 @@ enum class Confederation(val id: String, val label: String) {
     CONCACAF("concacaf", "CONCACAF"), OTHER("other", "Otra")
 }
 
-data class Star(val num: Int, val name: String, val pos: String, val note: String)
+data class StarStats(
+    val pj: Int = 0,
+    val goals: Int = 0,
+    val assists: Int = 0,
+    val rating: Double = 0.0,
+    val club: String = "",
+    val age: Int = 0,
+    val marketValue: String = ""   // ej. "€120M"
+)
+
+data class Star(
+    val num: Int,
+    val name: String,
+    val pos: String,
+    val note: String,
+    val stats: StarStats = StarStats()
+)
 
 data class Team(
     val id: String, val name: String, val code: String,
