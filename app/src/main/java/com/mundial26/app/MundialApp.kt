@@ -23,6 +23,8 @@ import com.mundial26.app.ui.matches.MatchesScreen
 import com.mundial26.app.ui.matches.MatchesViewModel
 import com.mundial26.app.ui.navigation.BottomNav
 import com.mundial26.app.ui.navigation.TopDestination
+import com.mundial26.app.ui.teams.TeamsScreen
+import com.mundial26.app.ui.teams.TeamsViewModel
 import com.mundial26.app.ui.theme.MundialTheme
 
 @Composable
@@ -74,7 +76,10 @@ fun MundialApp(container: AppContainer) {
                 val vm: MatchesViewModel = viewModel(factory = MatchesViewModel.Factory(container.matchRepository))
                 MatchesScreen(viewModel = vm)
             }
-            composable(TopDestination.TEAMS.route) { TabPlaceholder(TopDestination.TEAMS.label) }
+            composable(TopDestination.TEAMS.route) {
+                val vm: TeamsViewModel = viewModel(factory = TeamsViewModel.Factory(container.teamRepository))
+                TeamsScreen(viewModel = vm)
+            }
             composable(TopDestination.NEWS.route) { TabPlaceholder(TopDestination.NEWS.label) }
         }
     }
