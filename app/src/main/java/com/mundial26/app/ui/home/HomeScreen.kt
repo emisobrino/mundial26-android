@@ -55,6 +55,9 @@ import com.mundial26.app.ui.theme.MundialTheme
 fun HomeScreen(
     viewModel: HomeViewModel,
     onNavigateToTab: (String) -> Unit,
+    onMatchClick: (String) -> Unit,
+    onNewsClick: (String) -> Unit,
+    onTeamClick: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -69,6 +72,9 @@ fun HomeScreen(
         is HomeUiState.Success -> HomeContent(
             state = current,
             onNavigateToTab = onNavigateToTab,
+            onMatchClick = onMatchClick,
+            onNewsClick = onNewsClick,
+            onTeamClick = onTeamClick,
             modifier = modifier
         )
     }
@@ -116,6 +122,9 @@ private fun ErrorContent(
 private fun HomeContent(
     state: HomeUiState.Success,
     onNavigateToTab: (String) -> Unit,
+    onMatchClick: (String) -> Unit,
+    onNewsClick: (String) -> Unit,
+    onTeamClick: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     LazyColumn(
@@ -144,7 +153,7 @@ private fun HomeContent(
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 items(state.live) { match ->
-                    LiveMatchCard(match = match)
+                    LiveMatchCard(match = match, onClick = { onMatchClick(match.id) })
                 }
             }
         }
@@ -157,7 +166,7 @@ private fun HomeContent(
                 SectionHeader(title = "Resultados & próximos")
                 Spacer(modifier = Modifier.height(2.dp))
                 state.results.forEach { match ->
-                    MatchRow(match = match)
+                    MatchRow(match = match, onClick = { onMatchClick(match.id) })
                 }
             }
         }
@@ -165,7 +174,7 @@ private fun HomeContent(
         item {
             FeaturedTeamCard(
                 team = state.featured,
-                onClick = { onNavigateToTab(TopDestination.TEAMS.route) },
+                onClick = { onTeamClick(state.featured.id) },
                 modifier = Modifier.padding(horizontal = 16.dp)
             )
         }
@@ -199,7 +208,7 @@ private fun HomeContent(
                     onAction = { onNavigateToTab(TopDestination.NEWS.route) }
                 )
                 state.news.forEach { item ->
-                    NewsCardCompact(item = item)
+                    NewsCardCompact(item = item, onClick = { onNewsClick(item.id) })
                 }
             }
         }

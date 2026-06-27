@@ -47,6 +47,7 @@ import com.mundial26.app.ui.theme.MundialTheme
 @Composable
 fun TeamsScreen(
     viewModel: TeamsViewModel,
+    onTeamClick: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -70,7 +71,8 @@ fun TeamsScreen(
                 conf = conf,
                 onSelectView = viewModel::selectView,
                 onSelectConf = viewModel::selectConf,
-                filteredTeams = { teams, c -> viewModel.filteredTeams(teams, c) }
+                filteredTeams = { teams, c -> viewModel.filteredTeams(teams, c) },
+                onTeamClick = onTeamClick
             )
         }
     }
@@ -118,6 +120,7 @@ private fun TeamsContent(
     onSelectView: (TeamsView) -> Unit,
     onSelectConf: (ConfFilter) -> Unit,
     filteredTeams: (List<Team>, ConfFilter) -> List<Team>,
+    onTeamClick: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     when (view) {
@@ -128,6 +131,7 @@ private fun TeamsContent(
             onSelectView = onSelectView,
             onSelectConf = onSelectConf,
             teams = filteredTeams(state.teams, conf),
+            onTeamClick = onTeamClick,
             modifier = modifier
         )
         TeamsView.STANDINGS -> StandingsContent(
@@ -147,6 +151,7 @@ private fun TeamsListContent(
     onSelectView: (TeamsView) -> Unit,
     onSelectConf: (ConfFilter) -> Unit,
     teams: List<Team>,
+    onTeamClick: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     LazyVerticalGrid(
@@ -181,7 +186,7 @@ private fun TeamsListContent(
             }
         }
         items(teams, key = { it.id }) { team ->
-            TeamCard(team = team)
+            TeamCard(team = team, onClick = { onTeamClick(team.id) })
         }
     }
 }
@@ -221,13 +226,13 @@ private fun ConfFilterRow(
 }
 
 @Composable
-private fun TeamCard(team: Team, modifier: Modifier = Modifier) {
+private fun TeamCard(team: Team, onClick: () -> Unit, modifier: Modifier = Modifier) {
     Column(
         modifier = modifier
             .fillMaxWidth()
             .clip(MundialTheme.shapes.medium)
             .background(MundialTheme.colors.surface)
-            .clickable { }
+            .clickable { onClick() }
             .padding(14.dp)
     ) {
         Row(

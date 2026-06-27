@@ -41,6 +41,7 @@ import com.mundial26.app.ui.theme.MundialTheme
 @Composable
 fun MatchesScreen(
     viewModel: MatchesViewModel,
+    onMatchClick: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -74,7 +75,8 @@ fun MatchesScreen(
             )
             is MatchesUiState.Success -> MatchesContent(
                 state = current,
-                selectedView = selectedView
+                selectedView = selectedView,
+                onMatchClick = onMatchClick
             )
         }
     }
@@ -118,11 +120,12 @@ private fun ErrorContent(
 private fun MatchesContent(
     state: MatchesUiState.Success,
     selectedView: MatchesView,
+    onMatchClick: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     when (selectedView) {
-        MatchesView.LIST -> MatchesListContent(state = state, modifier = modifier)
-        MatchesView.CALENDAR -> CalendarContent(state = state, modifier = modifier)
+        MatchesView.LIST -> MatchesListContent(state = state, onMatchClick = onMatchClick, modifier = modifier)
+        MatchesView.CALENDAR -> CalendarContent(state = state, onMatchClick = onMatchClick, modifier = modifier)
         MatchesView.BRACKET -> BracketContent(state = state, modifier = modifier)
     }
 }
@@ -140,6 +143,7 @@ private fun SectionLabel(text: String, modifier: Modifier = Modifier) {
 @Composable
 private fun MatchesListContent(
     state: MatchesUiState.Success,
+    onMatchClick: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     LazyColumn(
@@ -150,19 +154,19 @@ private fun MatchesListContent(
         if (state.live.isNotEmpty()) {
             item { SectionLabel(text = "En vivo") }
             items(state.live, key = { "live-${it.id}" }) { match ->
-                MatchRow(match = match, useFullNames = true, liveBorder = true)
+                MatchRow(match = match, useFullNames = true, liveBorder = true, onClick = { onMatchClick(match.id) })
             }
         }
         if (state.upcoming.isNotEmpty()) {
             item { SectionLabel(text = "Próximos", modifier = Modifier.padding(top = 6.dp)) }
             items(state.upcoming, key = { "upcoming-${it.id}" }) { match ->
-                MatchRow(match = match, useFullNames = true)
+                MatchRow(match = match, useFullNames = true, onClick = { onMatchClick(match.id) })
             }
         }
         if (state.finished.isNotEmpty()) {
             item { SectionLabel(text = "Finalizados", modifier = Modifier.padding(top = 6.dp)) }
             items(state.finished, key = { "finished-${it.id}" }) { match ->
-                MatchRow(match = match, useFullNames = true)
+                MatchRow(match = match, useFullNames = true, onClick = { onMatchClick(match.id) })
             }
         }
     }
@@ -171,6 +175,7 @@ private fun MatchesListContent(
 @Composable
 private fun CalendarContent(
     state: MatchesUiState.Success,
+    onMatchClick: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     LazyColumn(
@@ -181,7 +186,7 @@ private fun CalendarContent(
         state.byDay.forEach { (day, matches) ->
             item(key = "day-$day") { SectionLabel(text = day, modifier = Modifier.padding(top = 6.dp)) }
             items(matches, key = { "day-$day-${it.id}" }) { match ->
-                MatchRow(match = match, useFullNames = true)
+                MatchRow(match = match, useFullNames = true, onClick = { onMatchClick(match.id) })
             }
         }
     }

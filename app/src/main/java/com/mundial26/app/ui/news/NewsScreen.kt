@@ -31,6 +31,7 @@ import com.mundial26.app.ui.theme.MundialTheme
 @Composable
 fun NewsScreen(
     viewModel: NewsViewModel,
+    onNewsClick: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -44,6 +45,7 @@ fun NewsScreen(
         )
         is NewsUiState.Success -> NewsContent(
             news = current.news,
+            onNewsClick = onNewsClick,
             modifier = modifier,
         )
     }
@@ -90,6 +92,7 @@ private fun ErrorContent(
 @Composable
 private fun NewsContent(
     news: List<NewsItem>,
+    onNewsClick: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -110,7 +113,7 @@ private fun NewsContent(
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             items(news, key = { it.id }) { item ->
-                NewsCardLarge(item = item, onClick = {})
+                NewsCardLarge(item = item, onClick = { onNewsClick(item.id) })
             }
         }
     }
