@@ -80,7 +80,8 @@ fun MundialApp(container: AppContainer) {
                         }
                     },
                     onMatchClick = { id -> navController.navigate(DetailRoutes.matchDetail(id)) },
-                    onNewsClick = { id -> navController.navigate(DetailRoutes.newsDetail(id)) }
+                    onNewsClick = { id -> navController.navigate(DetailRoutes.newsDetail(id)) },
+                    onTeamClick = { id -> navController.navigate(DetailRoutes.teamDetail(id)) }
                 )
             }
             composable(TopDestination.MATCHES.route) {

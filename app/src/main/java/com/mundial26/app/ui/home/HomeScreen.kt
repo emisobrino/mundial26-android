@@ -57,6 +57,7 @@ fun HomeScreen(
     onNavigateToTab: (String) -> Unit,
     onMatchClick: (String) -> Unit,
     onNewsClick: (String) -> Unit,
+    onTeamClick: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -73,6 +74,7 @@ fun HomeScreen(
             onNavigateToTab = onNavigateToTab,
             onMatchClick = onMatchClick,
             onNewsClick = onNewsClick,
+            onTeamClick = onTeamClick,
             modifier = modifier
         )
     }
@@ -122,6 +124,7 @@ private fun HomeContent(
     onNavigateToTab: (String) -> Unit,
     onMatchClick: (String) -> Unit,
     onNewsClick: (String) -> Unit,
+    onTeamClick: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     LazyColumn(
@@ -171,7 +174,7 @@ private fun HomeContent(
         item {
             FeaturedTeamCard(
                 team = state.featured,
-                onClick = { onNavigateToTab(TopDestination.TEAMS.route) },
+                onClick = { onTeamClick(state.featured.id) },
                 modifier = Modifier.padding(horizontal = 16.dp)
             )
         }
