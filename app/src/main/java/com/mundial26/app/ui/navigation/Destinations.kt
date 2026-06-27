@@ -18,10 +18,28 @@ enum class TopDestination(val route: String, val label: String, val icon: ImageV
 }
 
 /**
- * Rutas de detalle para tareas futuras. No se registran todavía en el NavHost.
+ * Rutas de detalle. La parte `{...}` es el nombre del argumento de navegación.
  */
 object DetailRoutes {
+    const val MATCH_ARG = "id"
+    const val TEAM_ARG = "id"
+    const val PLAYER_ARG = "teamId"
+    const val NEWS_ARG = "id"
+
     const val MATCH_DETAIL = "matchDetail/{id}"
     const val TEAM_DETAIL = "teamDetail/{id}"
+    const val PLAYER_DETAIL = "playerDetail/{teamId}"
     const val NEWS_DETAIL = "newsDetail/{id}"
+
+    fun matchDetail(id: String) = "matchDetail/$id"
+    fun teamDetail(id: String) = "teamDetail/$id"
+    fun playerDetail(teamId: String) = "playerDetail/$teamId"
+    fun newsDetail(id: String) = "newsDetail/$id"
+
+    /** ¿La ruta actual es una pantalla de detalle? (para ocultar la bottom nav) */
+    fun isDetail(route: String?): Boolean =
+        route != null && (route.startsWith("matchDetail/") ||
+            route.startsWith("teamDetail/") ||
+            route.startsWith("playerDetail/") ||
+            route.startsWith("newsDetail/"))
 }
