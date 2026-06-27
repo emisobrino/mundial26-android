@@ -15,6 +15,8 @@ interface TeamRepository {
     fun featured(): Team
     fun groups(): List<Group>
     fun team(id: String): Team?
+    fun topScorers(): List<Leader>
+    fun topAssists(): List<Leader>
 }
 
 interface NewsRepository {

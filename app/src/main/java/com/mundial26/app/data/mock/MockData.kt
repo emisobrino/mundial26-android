@@ -559,4 +559,23 @@ object MockData {
             )
         ),
     )
+
+    // ---------------------------------------------------------------------
+    // Líderes del torneo (ordenados por valor desc.)
+    // ---------------------------------------------------------------------
+    val topScorers: List<Leader> = listOf(
+        Leader(1, "K. Mbappé", "fr", 6),
+        Leader(2, "Vinícius Jr.", "br", 4),
+        Leader(3, "L. Messi", "ar", 4),
+        Leader(4, "J. Bellingham", "gb-eng", 4),
+        Leader(5, "S. Giménez", "mx", 3),
+    )
+
+    val topAssists: List<Leader> = listOf(
+        Leader(1, "L. Yamal", "es", 5),
+        Leader(2, "Rodrygo", "br", 4),
+        Leader(3, "L. Messi", "ar", 3),
+        Leader(4, "J. Musiala", "de", 3),
+        Leader(5, "R. Leão", "pt", 3),
+    )
 }

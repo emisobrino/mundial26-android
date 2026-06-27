@@ -38,4 +38,16 @@ class FakeRepositoriesTest {
         assertEquals(first, news.item(first.id))
         assertNull(news.item("no-existe"))
     }
+
+    @Test fun hay_goleadores_y_asistidores_ordenados() {
+        val scorers = teams.topScorers()
+        val assists = teams.topAssists()
+        assertEquals(5, scorers.size)
+        assertEquals(5, assists.size)
+        // deben venir ordenados por valor descendente
+        assertEquals(scorers.sortedByDescending { it.value }, scorers)
+        assertEquals(assists.sortedByDescending { it.value }, assists)
+        assertEquals("K. Mbappé", scorers.first().name)
+        assertEquals(6, scorers.first().value)
+    }
 }

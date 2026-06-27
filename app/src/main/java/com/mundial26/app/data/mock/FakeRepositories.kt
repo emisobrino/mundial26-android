@@ -14,6 +14,8 @@ class FakeTeamRepository : TeamRepository {
     override fun featured() = MockData.teams.first { it.id == MockData.featuredTeamId }
     override fun groups() = MockData.groups
     override fun team(id: String) = MockData.teams.find { it.id == id }
+    override fun topScorers() = MockData.topScorers
+    override fun topAssists() = MockData.topAssists
 }
 class FakeNewsRepository : NewsRepository {
     override fun news() = MockData.news

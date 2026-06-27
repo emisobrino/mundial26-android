@@ -57,3 +57,6 @@ data class BracketMatch(val a: String, val b: String, val flagA: String, val fla
 data class BracketRound(val round: String, val games: List<BracketMatch>)
 
 data class NewsItem(val id: String, val tag: String, val colorHex: Long, val time: String, val title: String, val summary: String, val body: List<String>)
+
+/** Fila del ranking de líderes del torneo (goleadores / asistidores). */
+data class Leader(val rank: Int, val name: String, val flag: String, val value: Int)
