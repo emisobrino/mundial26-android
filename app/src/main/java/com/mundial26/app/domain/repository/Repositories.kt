@@ -3,23 +3,23 @@ package com.mundial26.app.domain.repository
 import com.mundial26.app.domain.model.*
 
 interface MatchRepository {
-    fun liveMatches(): List<Match>
-    fun resultsAndUpcoming(): List<Match>
-    fun byDay(): Map<String, List<Match>>      // calendario
-    fun bracket(): List<BracketRound>
-    fun match(id: String): Match?
+    suspend fun liveMatches(): List<Match>
+    suspend fun resultsAndUpcoming(): List<Match>
+    suspend fun byDay(): Map<String, List<Match>>      // calendario
+    suspend fun bracket(): List<BracketRound>
+    suspend fun match(id: String): Match?
 }
 
 interface TeamRepository {
-    fun teams(): List<Team>
-    fun featured(): Team
-    fun groups(): List<Group>
-    fun team(id: String): Team?
-    fun topScorers(): List<Leader>
-    fun topAssists(): List<Leader>
+    suspend fun teams(): List<Team>
+    suspend fun featured(): Team
+    suspend fun groups(): List<Group>
+    suspend fun team(id: String): Team?
+    suspend fun topScorers(): List<Leader>
+    suspend fun topAssists(): List<Leader>
 }
 
 interface NewsRepository {
-    fun news(): List<NewsItem>
-    fun item(id: String): NewsItem?
+    suspend fun news(): List<NewsItem>
+    suspend fun item(id: String): NewsItem?
 }

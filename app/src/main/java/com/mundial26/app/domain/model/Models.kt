@@ -60,3 +60,14 @@ data class NewsItem(val id: String, val tag: String, val colorHex: Long, val tim
 
 /** Fila del ranking de líderes del torneo (goleadores / asistidores). */
 data class Leader(val rank: Int, val name: String, val flag: String, val value: Int)
+
+/** Jugador con stats acumuladas del torneo (persistido en Room, actualizado por sync). */
+data class Player(
+    val id: Long,
+    val name: String,
+    val teamCode: String,
+    val position: String,
+    val age: Int,
+    val goals: Int,
+    val assists: Int
+)
