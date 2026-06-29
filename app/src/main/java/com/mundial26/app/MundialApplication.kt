@@ -5,5 +5,5 @@ import com.mundial26.app.di.DefaultAppContainer
 
 class MundialApplication : Application() {
     lateinit var container: AppContainer
-    override fun onCreate() { super.onCreate(); container = DefaultAppContainer() }
+    override fun onCreate() { super.onCreate(); container = DefaultAppContainer(this) }
 }
