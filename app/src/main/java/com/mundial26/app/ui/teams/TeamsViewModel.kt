@@ -21,7 +21,10 @@ enum class ConfFilter(val label: String, val conf: Confederation?) {
     ALL("Todos", null),
     UEFA("UEFA", Confederation.UEFA),
     CONMEBOL("CONMEBOL", Confederation.CONMEBOL),
-    CONCACAF("CONCACAF", Confederation.CONCACAF)
+    CONCACAF("CONCACAF", Confederation.CONCACAF),
+    CAF("CAF", Confederation.CAF),
+    AFC("AFC", Confederation.AFC),
+    OFC("OFC", Confederation.OFC)
 }
 
 /**
@@ -81,7 +84,7 @@ class TeamsViewModel(
         viewModelScope.launch {
             try {
                 _uiState.value = TeamsUiState.Success(
-                    teams = teamRepository.teams().sortedBy { it.rank },
+                    teams = teamRepository.teams().sortedBy { if (it.rank <= 0) Int.MAX_VALUE else it.rank },
                     groups = teamRepository.groups()
                 )
             } catch (e: Exception) {

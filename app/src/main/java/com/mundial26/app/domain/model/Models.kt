@@ -3,7 +3,8 @@ package com.mundial26.app.domain.model
 enum class MatchStatus { LIVE, UPCOMING, FINISHED }
 enum class Confederation(val id: String, val label: String) {
     UEFA("uefa", "UEFA"), CONMEBOL("conmebol", "CONMEBOL"),
-    CONCACAF("concacaf", "CONCACAF"), OTHER("other", "Otra")
+    CONCACAF("concacaf", "CONCACAF"), AFC("afc", "AFC"),
+    CAF("caf", "CAF"), OFC("ofc", "OFC"), OTHER("other", "Otra")
 }
 
 data class StarStats(

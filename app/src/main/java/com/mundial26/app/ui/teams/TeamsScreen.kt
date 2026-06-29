@@ -241,17 +241,19 @@ private fun TeamCard(team: Team, onClick: () -> Unit, modifier: Modifier = Modif
             verticalAlignment = Alignment.CenterVertically
         ) {
             FlagAvatar(iso = team.flag, code = team.code, size = 44.dp)
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(MundialTheme.colors.segmentInactive)
-                    .padding(horizontal = 8.dp, vertical = 3.dp)
-            ) {
-                Text(
-                    text = "#${team.rank}",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MundialTheme.colors.textTertiary
-                )
+            if (team.rank > 0) {
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(MundialTheme.colors.segmentInactive)
+                        .padding(horizontal = 8.dp, vertical = 3.dp)
+                ) {
+                    Text(
+                        text = "#${team.rank}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MundialTheme.colors.textTertiary
+                    )
+                }
             }
         }
         Spacer(modifier = Modifier.height(10.dp))
@@ -267,18 +269,20 @@ private fun TeamCard(team: Team, onClick: () -> Unit, modifier: Modifier = Modif
             style = MaterialTheme.typography.labelSmall,
             color = MundialTheme.colors.textTertiary
         )
-        Spacer(modifier = Modifier.height(8.dp))
-        Box(
-            modifier = Modifier
-                .clip(RoundedCornerShape(8.dp))
-                .background(MundialTheme.colors.segmentInactive)
-                .padding(horizontal = 10.dp, vertical = 5.dp)
-        ) {
-            Text(
-                text = team.styleLabel,
-                style = MaterialTheme.typography.labelSmall,
-                color = MundialTheme.colors.textSecondary
-            )
+        if (team.styleLabel.isNotBlank()) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(MundialTheme.colors.segmentInactive)
+                    .padding(horizontal = 10.dp, vertical = 5.dp)
+            ) {
+                Text(
+                    text = team.styleLabel,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MundialTheme.colors.textSecondary
+                )
+            }
         }
     }
 }

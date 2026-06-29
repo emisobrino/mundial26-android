@@ -1,5 +1,6 @@
 package com.mundial26.app.data.sync
 import com.mundial26.app.data.editorial.EditorialSource
+import com.mundial26.app.data.net.confOf
 import com.mundial26.app.data.local.db.dao.*
 import com.mundial26.app.data.local.db.entities.*
 import com.mundial26.app.data.remote.footballdata.*
@@ -23,7 +24,7 @@ class SyncManager(
             val teams = api.teams().teams
             teamDao.upsertAll(teams.map { t ->
                 val ed = EditorialSource.forCode(t.tla)
-                TeamEntity(tla = t.tla, name = t.name, conf = ed?.conf?.name ?: "OTHER", rank = ed?.rank ?: 0,
+                TeamEntity(tla = t.tla, name = t.name, conf = confOf(t.tla).name, rank = ed?.rank ?: 0,
                     tag = ed?.tag ?: "", styleLabel = ed?.styleLabel ?: "",
                     starNum = ed?.star?.num ?: 0, starName = ed?.star?.name ?: "", starPos = ed?.star?.pos ?: "",
                     starNote = ed?.star?.note ?: "", starClub = ed?.star?.stats?.club ?: "",
