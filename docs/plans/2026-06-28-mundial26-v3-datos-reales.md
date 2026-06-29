@@ -71,7 +71,7 @@ ksp(libs.androidx.room.compiler)
 testImplementation(libs.androidx.room.testing)
 ```
 
-- [ ] **Step 4: `local.properties`** — agregar (NO commitear): `FOOTBALL_DATA_TOKEN=<TOKEN_FOOTBALL_DATA_ORG>`
+- [ ] **Step 4: `local.properties`** — agregar (NO commitear; usar el token real del usuario): `FOOTBALL_DATA_TOKEN=<TOKEN_FOOTBALL_DATA_ORG>`
 
 - [ ] **Step 5: `data/net/HttpClients.kt`**:
 ```kotlin
