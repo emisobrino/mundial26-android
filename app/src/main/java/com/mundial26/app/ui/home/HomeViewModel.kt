@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.lifecycle.viewmodel.initializer
 import com.mundial26.app.domain.model.Group
+import com.mundial26.app.domain.model.Leader
 import com.mundial26.app.domain.model.Match
 import com.mundial26.app.domain.model.NewsItem
 import com.mundial26.app.domain.model.Team
@@ -26,6 +27,8 @@ sealed interface HomeUiState {
         val results: List<Match>,
         val featured: Team,
         val groupB: Group,
+        val scorers: List<Leader>,
+        val assists: List<Leader>,
         val news: List<NewsItem>
     ) : HomeUiState
     data class Error(val message: String) : HomeUiState
@@ -64,6 +67,8 @@ class HomeViewModel(
                     results = matchRepository.resultsAndUpcoming().take(8),
                     featured = teamRepository.featured(),
                     groupB = groupB,
+                    scorers = teamRepository.topScorers(),
+                    assists = teamRepository.topAssists(),
                     news = newsRepository.news().take(4)
                 )
             } catch (e: Exception) {

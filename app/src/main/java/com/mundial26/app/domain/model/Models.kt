@@ -3,7 +3,8 @@ package com.mundial26.app.domain.model
 enum class MatchStatus { LIVE, UPCOMING, FINISHED }
 enum class Confederation(val id: String, val label: String) {
     UEFA("uefa", "UEFA"), CONMEBOL("conmebol", "CONMEBOL"),
-    CONCACAF("concacaf", "CONCACAF"), OTHER("other", "Otra")
+    CONCACAF("concacaf", "CONCACAF"), AFC("afc", "AFC"),
+    CAF("caf", "CAF"), OFC("ofc", "OFC"), OTHER("other", "Otra")
 }
 
 data class StarStats(
@@ -57,3 +58,17 @@ data class BracketMatch(val a: String, val b: String, val flagA: String, val fla
 data class BracketRound(val round: String, val games: List<BracketMatch>)
 
 data class NewsItem(val id: String, val tag: String, val colorHex: Long, val time: String, val title: String, val summary: String, val body: List<String>)
+
+/** Fila del ranking de líderes del torneo (goleadores / asistidores). */
+data class Leader(val rank: Int, val name: String, val flag: String, val value: Int)
+
+/** Jugador con stats acumuladas del torneo (persistido en Room, actualizado por sync). */
+data class Player(
+    val id: Long,
+    val name: String,
+    val teamCode: String,
+    val position: String,
+    val age: Int,
+    val goals: Int,
+    val assists: Int
+)

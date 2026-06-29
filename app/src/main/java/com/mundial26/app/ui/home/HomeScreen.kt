@@ -43,6 +43,7 @@ import com.mundial26.app.ui.components.MatchRow
 import com.mundial26.app.ui.components.NewsCardCompact
 import com.mundial26.app.ui.components.SectionHeader
 import com.mundial26.app.ui.components.StandingsTable
+import com.mundial26.app.ui.components.TournamentLeadersCard
 import com.mundial26.app.ui.components.BrandLogo26
 import com.mundial26.app.ui.navigation.TopDestination
 import com.mundial26.app.ui.theme.MundialTheme
@@ -193,6 +194,19 @@ private fun HomeContent(
                     group = state.groupB,
                     compact = true,
                     onRowClick = { onNavigateToTab(TopDestination.TEAMS.route) }
+                )
+            }
+        }
+
+        item {
+            Column(
+                modifier = Modifier.padding(horizontal = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                SectionHeader(title = "Líderes del torneo")
+                TournamentLeadersCard(
+                    scorers = state.scorers,
+                    assists = state.assists
                 )
             }
         }
