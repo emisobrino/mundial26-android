@@ -7,6 +7,7 @@ import androidx.lifecycle.viewmodel.initializer
 import com.mundial26.app.domain.model.Group
 import com.mundial26.app.domain.model.Leader
 import com.mundial26.app.domain.model.Match
+import com.mundial26.app.domain.model.MatchStatus
 import com.mundial26.app.domain.model.NewsItem
 import com.mundial26.app.domain.model.Team
 import com.mundial26.app.domain.repository.MatchRepository
@@ -62,9 +63,17 @@ class HomeViewModel(
             try {
                 val groups = teamRepository.groups()
                 val groupB = groups.firstOrNull { it.name.contains("B") } ?: groups[1]
+                // Resultados recientes primero (más nuevos arriba), luego los próximos por jugarse.
+                val resultsAndUpcoming = matchRepository.resultsAndUpcoming()
+                val recentFinished = resultsAndUpcoming
+                    .filter { it.status == MatchStatus.FINISHED }
+                    .sortedByDescending { (it.day ?: "") + (it.time ?: "") }
+                val nextUpcoming = resultsAndUpcoming
+                    .filter { it.status == MatchStatus.UPCOMING }
+                    .sortedBy { (it.day ?: "") + (it.time ?: "") }
                 _uiState.value = HomeUiState.Success(
                     live = matchRepository.liveMatches(),
-                    results = matchRepository.resultsAndUpcoming().take(8),
+                    results = (recentFinished.take(5) + nextUpcoming.take(3)),
                     featured = teamRepository.featured(),
                     groupB = groupB,
                     scorers = teamRepository.topScorers(),

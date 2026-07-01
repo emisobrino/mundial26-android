@@ -66,8 +66,12 @@ class MatchesViewModel(
                 val resultsAndUpcoming = matchRepository.resultsAndUpcoming()
                 _uiState.value = MatchesUiState.Success(
                     live = matchRepository.liveMatches(),
-                    upcoming = resultsAndUpcoming.filter { it.status == MatchStatus.UPCOMING },
-                    finished = resultsAndUpcoming.filter { it.status == MatchStatus.FINISHED },
+                    upcoming = resultsAndUpcoming
+                        .filter { it.status == MatchStatus.UPCOMING }
+                        .sortedBy { (it.day ?: "") + (it.time ?: "") },
+                    finished = resultsAndUpcoming
+                        .filter { it.status == MatchStatus.FINISHED }
+                        .sortedByDescending { (it.day ?: "") + (it.time ?: "") },
                     byDay = matchRepository.byDay(),
                     bracket = matchRepository.bracket()
                 )
