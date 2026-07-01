@@ -8,12 +8,38 @@ import okhttp3.Request
 private val ITEM = Regex("<item>(.*?)</item>", RegexOption.DOT_MATCHES_ALL)
 private fun tag(b: String, n: String) = Regex("<$n[^>]*>(.*?)</$n>", RegexOption.DOT_MATCHES_ALL).find(b)?.groupValues?.get(1)?.replace("<![CDATA[","")?.replace("]]>","")?.trim() ?: ""
 
-fun parseRss(xml: String): List<NewsItem> = ITEM.findAll(xml).map { it.groupValues[1] }.map { b ->
+private val MESES = arrayOf("ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic")
+
+/**
+ * Convierte un `pubDate` RFC-1123 (ej. "Sun, 28 Jun 2026 18:00:00 GMT") a un texto corto en español:
+ * "ahora", "hace N min", "hace N h", "ayer", "hace N d" o una fecha corta ("14 jun") si es más viejo.
+ * Si no se puede parsear, devuelve el texto original tal cual.
+ */
+fun formatNewsTime(pubDate: String, nowEpochMs: Long = System.currentTimeMillis()): String {
+    val zdt = runCatching {
+        java.time.ZonedDateTime.parse(pubDate.trim(), java.time.format.DateTimeFormatter.RFC_1123_DATE_TIME)
+    }.getOrNull() ?: return pubDate.trim()
+    val diff = nowEpochMs - zdt.toInstant().toEpochMilli()
+    if (diff < 0) return "ahora"
+    val min = diff / 60_000
+    val hours = min / 60
+    val days = hours / 24
+    return when {
+        min < 1L -> "ahora"
+        min < 60L -> "hace $min min"
+        hours < 24L -> "hace $hours h"
+        days == 1L -> "ayer"
+        days < 7L -> "hace $days d"
+        else -> "${zdt.dayOfMonth} ${MESES[zdt.monthValue - 1]}"
+    }
+}
+
+fun parseRss(xml: String, nowEpochMs: Long = System.currentTimeMillis()): List<NewsItem> = ITEM.findAll(xml).map { it.groupValues[1] }.map { b ->
     val source = tag(b, "source").ifBlank { "Noticias" }
     // Google News añade " - Fuente" al título; lo quitamos (la fuente va aparte).
     val title = tag(b, "title").removeSuffix(" - $source")
     // El <description> de Google News es HTML/links (no un resumen útil) → se omite.
-    NewsItem(id = tag(b, "link"), tag = source, colorHex = 0xFF2A398D, time = tag(b, "pubDate"), title = title, summary = "", body = emptyList())
+    NewsItem(id = tag(b, "link"), tag = source, colorHex = 0xFF2A398D, time = formatNewsTime(tag(b, "pubDate"), nowEpochMs), title = title, summary = "", body = emptyList())
 }.toList()
 
 private const val UA = "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Mobile Safari/537.36"
