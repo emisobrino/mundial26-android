@@ -2,9 +2,11 @@ package com.mundial26.app.data.repository
 
 import com.mundial26.app.data.editorial.EditorialSource
 import com.mundial26.app.data.local.db.dao.*
+import com.mundial26.app.data.local.db.ageFromDob
 import com.mundial26.app.data.local.db.toDomain
 import com.mundial26.app.data.local.db.toGroups
 import com.mundial26.app.data.local.db.toLeader
+import com.mundial26.app.data.local.db.toPlayer
 import com.mundial26.app.data.mock.MockData
 import com.mundial26.app.data.sync.SyncManager
 import com.mundial26.app.domain.model.*
@@ -17,6 +19,8 @@ class DefaultTeamRepository(
 
     private suspend fun fresh() { runCatching { sync.ensureFresh() } }
 
+    override suspend fun refresh() { runCatching { sync.forceRefresh() } }
+
     override suspend fun teams(): List<Team> {
         fresh()
         val rows = teamDao.all()
@@ -24,14 +28,17 @@ class DefaultTeamRepository(
         return rows.map { t ->
             val ed = EditorialSource.forCode(t.tla)
             val base = t.toDomain()
-            val starP = playerDao.byTeam(t.tla).firstOrNull { it.name.equals(t.starName, true) }
+            // Enlace estrella↔jugador tolerante a acentos y formato de nombre ("L. Messi" vs "Lionel Messi").
+            val squad = playerDao.byTeam(t.tla)
+            val starP = squad.firstOrNull { it.name.equals(t.starName, true) }
+                ?: squad.firstOrNull { nameMatches(it.name, t.starName) }
             base.copy(
                 pros = ed?.pros ?: emptyList(),
                 cons = ed?.cons ?: emptyList(),
                 star = base.star.copy(stats = base.star.stats.copy(
                     goals = starP?.goals ?: 0,
                     assists = starP?.assists ?: 0,
-                    age = ageFrom(starP?.dateOfBirth)
+                    age = ageFromDob(starP?.dateOfBirth)
                 ))
             )
         }
@@ -45,8 +52,11 @@ class DefaultTeamRepository(
         return standingDao.all().toGroups().ifEmpty { MockData.groups }
     }
 
-    override suspend fun team(id: String): Team? =
-        teams().firstOrNull { it.id == id || it.code.equals(id, true) }
+    override suspend fun team(id: String): Team? {
+        val team = teams().firstOrNull { it.id == id || it.code.equals(id, true) } ?: return null
+        val squad = playerDao.byTeam(team.code).map { it.toPlayer() }
+        return team.copy(squad = squad)
+    }
 
     override suspend fun topScorers(): List<Leader> {
         fresh()
@@ -59,7 +69,20 @@ class DefaultTeamRepository(
     }
 }
 
-private fun ageFrom(dob: String?): Int {
-    if (dob.isNullOrBlank()) return 0
-    return runCatching { java.time.Period.between(java.time.LocalDate.parse(dob.take(10)), java.time.LocalDate.now()).years }.getOrDefault(0)
+/** Normaliza un nombre: sin acentos, minúsculas, sin espacios extra. */
+private fun norm(s: String): String =
+    java.text.Normalizer.normalize(s, java.text.Normalizer.Form.NFD)
+        .replace(Regex("\\p{Mn}+"), "").lowercase().trim()
+
+/**
+ * Empareja el nombre editorial de la estrella con el del plantel real tolerando
+ * acentos y formato ("L. Messi" ↔ "Lionel Messi" ↔ "Messi") comparando el apellido.
+ */
+fun nameMatches(playerName: String, starName: String): Boolean {
+    val p = norm(playerName)
+    val s = norm(starName)
+    if (p == s) return true
+    val pLast = p.substringAfterLast(' ')
+    val sLast = s.substringAfterLast(' ')
+    return pLast.length >= 3 && pLast == sLast
 }

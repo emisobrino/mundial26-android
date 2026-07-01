@@ -272,6 +272,12 @@ private fun StatsSection(stats: List<MatchStat>, modifier: Modifier = Modifier) 
                 }
             }
         }
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = "Estimación editorial · no oficial",
+            style = MaterialTheme.typography.labelSmall,
+            color = MundialTheme.colors.textFaint
+        )
     }
 }
 

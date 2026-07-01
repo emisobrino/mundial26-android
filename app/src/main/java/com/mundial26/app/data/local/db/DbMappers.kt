@@ -31,7 +31,51 @@ fun MatchEntity.toDomain(nowEpochMs: Long = System.currentTimeMillis()): Match {
     )
 }
 
+private val KNOCKOUT_ORDER = listOf("LAST_32", "LAST_16", "QUARTER_FINALS", "SEMI_FINALS", "THIRD_PLACE", "FINAL")
+private fun prettyStage(stage: String): String = when (stage) {
+    "LAST_32" -> "16avos"
+    "LAST_16" -> "Octavos"
+    "QUARTER_FINALS" -> "Cuartos"
+    "SEMI_FINALS" -> "Semifinales"
+    "THIRD_PLACE" -> "Tercer puesto"
+    "FINAL" -> "Final"
+    else -> stage.replace("_", " ")
+}
+
+/** Construye el cuadro de eliminatorias a partir de los partidos de fase final (campo `stage`). */
+fun List<MatchEntity>.toBracket(): List<BracketRound> =
+    filter { it.stage in KNOCKOUT_ORDER }
+        .groupBy { it.stage }
+        .toList()
+        .sortedBy { (stage, _) -> KNOCKOUT_ORDER.indexOf(stage) }
+        .map { (stage, matches) ->
+            BracketRound(
+                round = prettyStage(stage),
+                games = matches.sortedBy { it.utcDate }.map { m ->
+                    BracketMatch(
+                        a = m.homeTla, b = m.awayTla,
+                        flagA = tlaToIso(m.homeTla), flagB = tlaToIso(m.awayTla),
+                        sa = m.scoreHome, sb = m.scoreAway,
+                        done = statusOf(m.status) == MatchStatus.FINISHED
+                    )
+                }
+            )
+        }
+
 fun PlayerEntity.toLeader(rank: Int, value: Int) = Leader(rank, name, tlaToIso(teamTla), value)
+
+/** Edad a partir de la fecha de nacimiento "yyyy-MM-dd" (0 si no hay dato). */
+fun ageFromDob(dob: String?): Int {
+    if (dob.isNullOrBlank()) return 0
+    return runCatching {
+        java.time.Period.between(java.time.LocalDate.parse(dob.take(10)), java.time.LocalDate.now()).years
+    }.getOrDefault(0)
+}
+
+fun PlayerEntity.toPlayer() = Player(
+    id = id, name = name, teamCode = teamTla, position = position,
+    age = ageFromDob(dateOfBirth), goals = goals, assists = assists
+)
 
 fun TeamEntity.toDomain() = Team(
     id = tla.lowercase(), name = name, code = tla,

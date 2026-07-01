@@ -56,6 +56,9 @@ class TeamsViewModel(
     private val _conf = MutableStateFlow(ConfFilter.ALL)
     val conf: StateFlow<ConfFilter> = _conf.asStateFlow()
 
+    private val _isRefreshing = MutableStateFlow(false)
+    val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
+
     init {
         load()
     }
@@ -63,6 +66,20 @@ class TeamsViewModel(
     /** Reintenta la carga de datos tras un error. */
     fun retry() {
         load()
+    }
+
+    /** Pull-to-refresh: fuerza resync y recarga sin spinner de pantalla completa. */
+    fun refresh() {
+        viewModelScope.launch {
+            _isRefreshing.value = true
+            try {
+                teamRepository.refresh()
+                loadData()
+            } catch (_: Exception) {
+            } finally {
+                _isRefreshing.value = false
+            }
+        }
     }
 
     /** Cambia la sub-vista activa (Selecciones / Grupos). */
@@ -81,15 +98,17 @@ class TeamsViewModel(
 
     private fun load() {
         _uiState.value = TeamsUiState.Loading
-        viewModelScope.launch {
-            try {
-                _uiState.value = TeamsUiState.Success(
-                    teams = teamRepository.teams().sortedBy { if (it.rank <= 0) Int.MAX_VALUE else it.rank },
-                    groups = teamRepository.groups()
-                )
-            } catch (e: Exception) {
-                _uiState.value = TeamsUiState.Error(e.message ?: "Error al cargar Equipos")
-            }
+        viewModelScope.launch { loadData() }
+    }
+
+    private suspend fun loadData() {
+        try {
+            _uiState.value = TeamsUiState.Success(
+                teams = teamRepository.teams().sortedBy { if (it.rank <= 0) Int.MAX_VALUE else it.rank },
+                groups = teamRepository.groups()
+            )
+        } catch (e: Exception) {
+            _uiState.value = TeamsUiState.Error(e.message ?: "Error al cargar Equipos")
         }
     }
 

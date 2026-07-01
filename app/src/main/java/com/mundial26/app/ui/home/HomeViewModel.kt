@@ -7,6 +7,7 @@ import androidx.lifecycle.viewmodel.initializer
 import com.mundial26.app.domain.model.Group
 import com.mundial26.app.domain.model.Leader
 import com.mundial26.app.domain.model.Match
+import com.mundial26.app.domain.model.MatchStatus
 import com.mundial26.app.domain.model.NewsItem
 import com.mundial26.app.domain.model.Team
 import com.mundial26.app.domain.repository.MatchRepository
@@ -47,6 +48,9 @@ class HomeViewModel(
     private val _uiState = MutableStateFlow<HomeUiState>(HomeUiState.Loading)
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
+    private val _isRefreshing = MutableStateFlow(false)
+    val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
+
     init {
         load()
     }
@@ -56,24 +60,51 @@ class HomeViewModel(
         load()
     }
 
+    /** Pull-to-refresh: fuerza resync y recarga sin mostrar el spinner de pantalla completa. */
+    fun refresh() {
+        viewModelScope.launch {
+            _isRefreshing.value = true
+            try {
+                matchRepository.refresh()
+                teamRepository.refresh()
+                newsRepository.refresh()
+                loadData()
+            } catch (_: Exception) {
+                // Mantiene el contenido actual si el refresh falla.
+            } finally {
+                _isRefreshing.value = false
+            }
+        }
+    }
+
     private fun load() {
         _uiState.value = HomeUiState.Loading
-        viewModelScope.launch {
-            try {
-                val groups = teamRepository.groups()
+        viewModelScope.launch { loadData() }
+    }
+
+    private suspend fun loadData() {
+        try {
+            val groups = teamRepository.groups()
                 val groupB = groups.firstOrNull { it.name.contains("B") } ?: groups[1]
+                // Resultados recientes primero (más nuevos arriba), luego los próximos por jugarse.
+                val resultsAndUpcoming = matchRepository.resultsAndUpcoming()
+                val recentFinished = resultsAndUpcoming
+                    .filter { it.status == MatchStatus.FINISHED }
+                    .sortedByDescending { (it.day ?: "") + (it.time ?: "") }
+                val nextUpcoming = resultsAndUpcoming
+                    .filter { it.status == MatchStatus.UPCOMING }
+                    .sortedBy { (it.day ?: "") + (it.time ?: "") }
                 _uiState.value = HomeUiState.Success(
                     live = matchRepository.liveMatches(),
-                    results = matchRepository.resultsAndUpcoming().take(8),
+                    results = (recentFinished.take(5) + nextUpcoming.take(3)),
                     featured = teamRepository.featured(),
                     groupB = groupB,
                     scorers = teamRepository.topScorers(),
                     assists = teamRepository.topAssists(),
                     news = newsRepository.news().take(4)
                 )
-            } catch (e: Exception) {
-                _uiState.value = HomeUiState.Error(e.message ?: "Error al cargar Inicio")
-            }
+        } catch (e: Exception) {
+            _uiState.value = HomeUiState.Error(e.message ?: "Error al cargar Inicio")
         }
     }
 

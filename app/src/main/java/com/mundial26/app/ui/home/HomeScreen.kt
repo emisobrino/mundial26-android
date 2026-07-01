@@ -23,10 +23,12 @@ import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -62,6 +64,7 @@ fun HomeScreen(
     modifier: Modifier = Modifier
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
 
     when (val current = state) {
         is HomeUiState.Loading -> LoadingContent(modifier)
@@ -72,6 +75,8 @@ fun HomeScreen(
         )
         is HomeUiState.Success -> HomeContent(
             state = current,
+            isRefreshing = isRefreshing,
+            onRefresh = viewModel::refresh,
             onNavigateToTab = onNavigateToTab,
             onMatchClick = onMatchClick,
             onNewsClick = onNewsClick,
@@ -119,19 +124,27 @@ private fun ErrorContent(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun HomeContent(
     state: HomeUiState.Success,
+    isRefreshing: Boolean,
+    onRefresh: () -> Unit,
     onNavigateToTab: (String) -> Unit,
     onMatchClick: (String) -> Unit,
     onNewsClick: (String) -> Unit,
     onTeamClick: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    LazyColumn(
+    PullToRefreshBox(
+        isRefreshing = isRefreshing,
+        onRefresh = onRefresh,
         modifier = modifier
             .fillMaxSize()
-            .background(MundialTheme.colors.appBg),
+            .background(MundialTheme.colors.appBg)
+    ) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
@@ -226,6 +239,7 @@ private fun HomeContent(
                 }
             }
         }
+    }
     }
 }
 

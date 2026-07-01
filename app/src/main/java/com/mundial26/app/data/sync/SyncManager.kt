@@ -45,4 +45,15 @@ class SyncManager(
     }
 
     suspend fun ensureFresh() { seedIfEmpty(); refreshIfStale() }
+
+    /** Refresco forzado (pull-to-refresh): ignora el TTL y vuelve a traer standings/matches/scorers. */
+    suspend fun forceRefresh() {
+        seedIfEmpty()
+        runCatching { standingDao.upsertAll(api.standings().toEntities()); metaDao.put(SyncMeta("standings", now())) }
+        runCatching { matchDao.upsertAll(api.matches().toEntities()); metaDao.put(SyncMeta("matches", now())) }
+        runCatching {
+            api.scorers().scorers.forEach { s -> playerDao.updateStats(s.team.tla, s.player.name, s.goals ?: 0, s.assists ?: 0) }
+            metaDao.put(SyncMeta("scorers", now()))
+        }
+    }
 }

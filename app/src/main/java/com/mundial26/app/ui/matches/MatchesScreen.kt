@@ -16,8 +16,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -46,6 +48,7 @@ fun MatchesScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val selectedView by viewModel.selectedView.collectAsStateWithLifecycle()
+    val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
 
     Column(
         modifier = modifier
@@ -76,6 +79,8 @@ fun MatchesScreen(
             is MatchesUiState.Success -> MatchesContent(
                 state = current,
                 selectedView = selectedView,
+                isRefreshing = isRefreshing,
+                onRefresh = viewModel::refresh,
                 onMatchClick = onMatchClick
             )
         }
@@ -116,17 +121,26 @@ private fun ErrorContent(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun MatchesContent(
     state: MatchesUiState.Success,
     selectedView: MatchesView,
+    isRefreshing: Boolean,
+    onRefresh: () -> Unit,
     onMatchClick: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    when (selectedView) {
-        MatchesView.LIST -> MatchesListContent(state = state, onMatchClick = onMatchClick, modifier = modifier)
-        MatchesView.CALENDAR -> CalendarContent(state = state, onMatchClick = onMatchClick, modifier = modifier)
-        MatchesView.BRACKET -> BracketContent(state = state, modifier = modifier)
+    PullToRefreshBox(
+        isRefreshing = isRefreshing,
+        onRefresh = onRefresh,
+        modifier = modifier.fillMaxSize()
+    ) {
+        when (selectedView) {
+            MatchesView.LIST -> MatchesListContent(state = state, onMatchClick = onMatchClick)
+            MatchesView.CALENDAR -> CalendarContent(state = state, onMatchClick = onMatchClick)
+            MatchesView.BRACKET -> BracketContent(state = state)
+        }
     }
 }
 

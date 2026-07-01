@@ -32,7 +32,8 @@ data class Team(
     val styleLabel: String,
     val star: Star,
     val pros: List<String>, val cons: List<String>,
-    val form: List<Char>         // 'V' | 'E' | 'D'
+    val form: List<Char>,        // 'V' | 'E' | 'D'
+    val squad: List<Player> = emptyList()   // plantel real (football-data /teams.squad)
 )
 
 data class MatchStat(val label: String, val a: Int, val b: Int)
