@@ -61,6 +61,7 @@ fun HomeScreen(
     onMatchClick: (String) -> Unit,
     onNewsClick: (String) -> Unit,
     onTeamClick: (String) -> Unit,
+    onLeadersClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -81,6 +82,7 @@ fun HomeScreen(
             onMatchClick = onMatchClick,
             onNewsClick = onNewsClick,
             onTeamClick = onTeamClick,
+            onLeadersClick = onLeadersClick,
             modifier = modifier
         )
     }
@@ -134,6 +136,7 @@ private fun HomeContent(
     onMatchClick: (String) -> Unit,
     onNewsClick: (String) -> Unit,
     onTeamClick: (String) -> Unit,
+    onLeadersClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     PullToRefreshBox(
@@ -216,7 +219,11 @@ private fun HomeContent(
                 modifier = Modifier.padding(horizontal = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                SectionHeader(title = "Líderes del torneo")
+                SectionHeader(
+                    title = "Líderes del torneo",
+                    actionText = "Ver todo",
+                    onAction = onLeadersClick
+                )
                 TournamentLeadersCard(
                     scorers = state.scorers,
                     assists = state.assists

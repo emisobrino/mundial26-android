@@ -15,6 +15,8 @@ import androidx.navigation.navArgument
 import com.mundial26.app.di.AppContainer
 import com.mundial26.app.ui.home.HomeScreen
 import com.mundial26.app.ui.home.HomeViewModel
+import com.mundial26.app.ui.leaders.LeadersScreen
+import com.mundial26.app.ui.leaders.LeadersViewModel
 import com.mundial26.app.ui.matchdetail.MatchDetailScreen
 import com.mundial26.app.ui.matchdetail.MatchDetailViewModel
 import com.mundial26.app.ui.matches.MatchesScreen
@@ -81,7 +83,8 @@ fun MundialApp(container: AppContainer) {
                     },
                     onMatchClick = { id -> navController.navigate(DetailRoutes.matchDetail(id)) },
                     onNewsClick = { id -> navController.navigate(DetailRoutes.newsDetail(id)) },
-                    onTeamClick = { id -> navController.navigate(DetailRoutes.teamDetail(id)) }
+                    onTeamClick = { id -> navController.navigate(DetailRoutes.teamDetail(id)) },
+                    onLeadersClick = { navController.navigate(DetailRoutes.LEADERS) }
                 )
             }
             composable(TopDestination.MATCHES.route) {
@@ -148,6 +151,10 @@ fun MundialApp(container: AppContainer) {
                     factory = PlayerDetailViewModel.Factory(container.teamRepository, teamId)
                 )
                 PlayerDetailScreen(viewModel = vm, onBack = { navController.popBackStack() })
+            }
+            composable(DetailRoutes.LEADERS) {
+                val vm: LeadersViewModel = viewModel(factory = LeadersViewModel.Factory(container.teamRepository))
+                LeadersScreen(viewModel = vm, onBack = { navController.popBackStack() })
             }
         }
     }
