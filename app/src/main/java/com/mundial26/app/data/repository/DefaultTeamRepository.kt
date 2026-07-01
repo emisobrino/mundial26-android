@@ -17,6 +17,8 @@ class DefaultTeamRepository(
 
     private suspend fun fresh() { runCatching { sync.ensureFresh() } }
 
+    override suspend fun refresh() { runCatching { sync.forceRefresh() } }
+
     override suspend fun teams(): List<Team> {
         fresh()
         val rows = teamDao.all()

@@ -45,6 +45,9 @@ class MatchesViewModel(
     private val _selectedView = MutableStateFlow(MatchesView.LIST)
     val selectedView: StateFlow<MatchesView> = _selectedView.asStateFlow()
 
+    private val _isRefreshing = MutableStateFlow(false)
+    val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
+
     init {
         load()
     }
@@ -59,11 +62,28 @@ class MatchesViewModel(
         _selectedView.value = view
     }
 
+    /** Pull-to-refresh: fuerza resync y recarga sin spinner de pantalla completa. */
+    fun refresh() {
+        viewModelScope.launch {
+            _isRefreshing.value = true
+            try {
+                matchRepository.refresh()
+                loadData()
+            } catch (_: Exception) {
+            } finally {
+                _isRefreshing.value = false
+            }
+        }
+    }
+
     private fun load() {
         _uiState.value = MatchesUiState.Loading
-        viewModelScope.launch {
-            try {
-                val resultsAndUpcoming = matchRepository.resultsAndUpcoming()
+        viewModelScope.launch { loadData() }
+    }
+
+    private suspend fun loadData() {
+        try {
+            val resultsAndUpcoming = matchRepository.resultsAndUpcoming()
                 _uiState.value = MatchesUiState.Success(
                     live = matchRepository.liveMatches(),
                     upcoming = resultsAndUpcoming
@@ -75,9 +95,8 @@ class MatchesViewModel(
                     byDay = matchRepository.byDay(),
                     bracket = matchRepository.bracket()
                 )
-            } catch (e: Exception) {
-                _uiState.value = MatchesUiState.Error(e.message ?: "Error al cargar Partidos")
-            }
+        } catch (e: Exception) {
+            _uiState.value = MatchesUiState.Error(e.message ?: "Error al cargar Partidos")
         }
     }
 

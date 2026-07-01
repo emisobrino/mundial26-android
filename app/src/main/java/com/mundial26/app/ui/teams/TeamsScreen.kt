@@ -25,8 +25,10 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -53,6 +55,7 @@ fun TeamsScreen(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val view by viewModel.view.collectAsStateWithLifecycle()
     val conf by viewModel.conf.collectAsStateWithLifecycle()
+    val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
 
     Column(
         modifier = modifier
@@ -69,6 +72,8 @@ fun TeamsScreen(
                 state = current,
                 view = view,
                 conf = conf,
+                isRefreshing = isRefreshing,
+                onRefresh = viewModel::refresh,
                 onSelectView = viewModel::selectView,
                 onSelectConf = viewModel::selectConf,
                 filteredTeams = { teams, c -> viewModel.filteredTeams(teams, c) },
@@ -112,34 +117,41 @@ private fun ErrorContent(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun TeamsContent(
     state: TeamsUiState.Success,
     view: TeamsView,
     conf: ConfFilter,
+    isRefreshing: Boolean,
+    onRefresh: () -> Unit,
     onSelectView: (TeamsView) -> Unit,
     onSelectConf: (ConfFilter) -> Unit,
     filteredTeams: (List<Team>, ConfFilter) -> List<Team>,
     onTeamClick: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    when (view) {
-        TeamsView.LIST -> TeamsListContent(
-            state = state,
-            view = view,
-            conf = conf,
-            onSelectView = onSelectView,
-            onSelectConf = onSelectConf,
-            teams = filteredTeams(state.teams, conf),
-            onTeamClick = onTeamClick,
-            modifier = modifier
-        )
-        TeamsView.STANDINGS -> StandingsContent(
-            state = state,
-            view = view,
-            onSelectView = onSelectView,
-            modifier = modifier
-        )
+    PullToRefreshBox(
+        isRefreshing = isRefreshing,
+        onRefresh = onRefresh,
+        modifier = modifier.fillMaxSize()
+    ) {
+        when (view) {
+            TeamsView.LIST -> TeamsListContent(
+                state = state,
+                view = view,
+                conf = conf,
+                onSelectView = onSelectView,
+                onSelectConf = onSelectConf,
+                teams = filteredTeams(state.teams, conf),
+                onTeamClick = onTeamClick
+            )
+            TeamsView.STANDINGS -> StandingsContent(
+                state = state,
+                view = view,
+                onSelectView = onSelectView
+            )
+        }
     }
 }
 

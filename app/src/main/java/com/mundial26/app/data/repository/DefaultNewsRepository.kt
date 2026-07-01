@@ -16,4 +16,5 @@ class DefaultNewsRepository(private val rss: NewsRssSource) : NewsRepository {
         return cache.ifEmpty { MockData.news }
     }
     override suspend fun item(id: String): NewsItem? = news().firstOrNull { it.id == id }
+    override suspend fun refresh() { cache = emptyList(); at = 0 }
 }

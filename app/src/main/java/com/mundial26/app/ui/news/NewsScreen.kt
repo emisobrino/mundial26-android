@@ -13,8 +13,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -35,6 +37,7 @@ fun NewsScreen(
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
 
     when (val current = state) {
         is NewsUiState.Loading -> LoadingContent(modifier)
@@ -45,6 +48,8 @@ fun NewsScreen(
         )
         is NewsUiState.Success -> NewsContent(
             news = current.news,
+            isRefreshing = isRefreshing,
+            onRefresh = viewModel::refresh,
             onNewsClick = onNewsClick,
             modifier = modifier,
         )
@@ -89,9 +94,12 @@ private fun ErrorContent(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun NewsContent(
     news: List<NewsItem>,
+    isRefreshing: Boolean,
+    onRefresh: () -> Unit,
     onNewsClick: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -107,13 +115,19 @@ private fun NewsContent(
             modifier = Modifier.padding(16.dp),
         )
 
-        LazyColumn(
+        PullToRefreshBox(
+            isRefreshing = isRefreshing,
+            onRefresh = onRefresh,
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            items(news, key = { it.id }) { item ->
-                NewsCardLarge(item = item, onClick = { onNewsClick(item.id) })
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp),
+            ) {
+                items(news, key = { it.id }) { item ->
+                    NewsCardLarge(item = item, onClick = { onNewsClick(item.id) })
+                }
             }
         }
     }

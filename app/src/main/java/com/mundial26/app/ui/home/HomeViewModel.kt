@@ -48,6 +48,9 @@ class HomeViewModel(
     private val _uiState = MutableStateFlow<HomeUiState>(HomeUiState.Loading)
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
+    private val _isRefreshing = MutableStateFlow(false)
+    val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
+
     init {
         load()
     }
@@ -57,11 +60,31 @@ class HomeViewModel(
         load()
     }
 
+    /** Pull-to-refresh: fuerza resync y recarga sin mostrar el spinner de pantalla completa. */
+    fun refresh() {
+        viewModelScope.launch {
+            _isRefreshing.value = true
+            try {
+                matchRepository.refresh()
+                teamRepository.refresh()
+                newsRepository.refresh()
+                loadData()
+            } catch (_: Exception) {
+                // Mantiene el contenido actual si el refresh falla.
+            } finally {
+                _isRefreshing.value = false
+            }
+        }
+    }
+
     private fun load() {
         _uiState.value = HomeUiState.Loading
-        viewModelScope.launch {
-            try {
-                val groups = teamRepository.groups()
+        viewModelScope.launch { loadData() }
+    }
+
+    private suspend fun loadData() {
+        try {
+            val groups = teamRepository.groups()
                 val groupB = groups.firstOrNull { it.name.contains("B") } ?: groups[1]
                 // Resultados recientes primero (más nuevos arriba), luego los próximos por jugarse.
                 val resultsAndUpcoming = matchRepository.resultsAndUpcoming()
@@ -80,9 +103,8 @@ class HomeViewModel(
                     assists = teamRepository.topAssists(),
                     news = newsRepository.news().take(4)
                 )
-            } catch (e: Exception) {
-                _uiState.value = HomeUiState.Error(e.message ?: "Error al cargar Inicio")
-            }
+        } catch (e: Exception) {
+            _uiState.value = HomeUiState.Error(e.message ?: "Error al cargar Inicio")
         }
     }
 

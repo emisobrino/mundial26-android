@@ -8,6 +8,8 @@ interface MatchRepository {
     suspend fun byDay(): Map<String, List<Match>>      // calendario
     suspend fun bracket(): List<BracketRound>
     suspend fun match(id: String): Match?
+    /** Fuerza una resincronización (pull-to-refresh), ignorando el TTL. */
+    suspend fun refresh() {}
 }
 
 interface TeamRepository {
@@ -17,9 +19,13 @@ interface TeamRepository {
     suspend fun team(id: String): Team?
     suspend fun topScorers(): List<Leader>
     suspend fun topAssists(): List<Leader>
+    /** Fuerza una resincronización (pull-to-refresh), ignorando el TTL. */
+    suspend fun refresh() {}
 }
 
 interface NewsRepository {
     suspend fun news(): List<NewsItem>
     suspend fun item(id: String): NewsItem?
+    /** Invalida la caché de noticias para volver a traer el RSS. */
+    suspend fun refresh() {}
 }

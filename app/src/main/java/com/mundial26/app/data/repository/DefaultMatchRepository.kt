@@ -17,6 +17,7 @@ class DefaultMatchRepository(
         runCatching { sync.ensureFresh() }
         return matchDao.all().map { it.toDomain() }.ifEmpty { MockData.matches }
     }
+    override suspend fun refresh() { runCatching { sync.forceRefresh() } }
     override suspend fun liveMatches() = all().filter { it.status == MatchStatus.LIVE }
     override suspend fun resultsAndUpcoming() = all().filter { it.status != MatchStatus.LIVE }
     override suspend fun byDay() = all().filter { it.day != null }.groupBy { it.day!! }

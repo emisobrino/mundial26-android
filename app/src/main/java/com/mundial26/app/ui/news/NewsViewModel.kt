@@ -22,6 +22,9 @@ class NewsViewModel(private val newsRepo: NewsRepository) : ViewModel() {
     private val _uiState = MutableStateFlow<NewsUiState>(NewsUiState.Loading)
     val uiState: StateFlow<NewsUiState> = _uiState.asStateFlow()
 
+    private val _isRefreshing = MutableStateFlow(false)
+    val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
+
     init {
         load()
     }
@@ -30,15 +33,31 @@ class NewsViewModel(private val newsRepo: NewsRepository) : ViewModel() {
         load()
     }
 
+    /** Pull-to-refresh: invalida la caché de noticias y recarga. */
+    fun refresh() {
+        viewModelScope.launch {
+            _isRefreshing.value = true
+            try {
+                newsRepo.refresh()
+                loadData()
+            } catch (_: Exception) {
+            } finally {
+                _isRefreshing.value = false
+            }
+        }
+    }
+
     private fun load() {
         _uiState.value = NewsUiState.Loading
-        viewModelScope.launch {
-            _uiState.value = try {
-                val news = newsRepo.news()
-                NewsUiState.Success(news)
-            } catch (e: Exception) {
-                NewsUiState.Error(e.message ?: "No se pudieron cargar las noticias")
-            }
+        viewModelScope.launch { loadData() }
+    }
+
+    private suspend fun loadData() {
+        _uiState.value = try {
+            val news = newsRepo.news()
+            NewsUiState.Success(news)
+        } catch (e: Exception) {
+            NewsUiState.Error(e.message ?: "No se pudieron cargar las noticias")
         }
     }
 
