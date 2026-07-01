@@ -139,7 +139,8 @@ fun MundialApp(container: AppContainer) {
                 TeamDetailScreen(
                     viewModel = vm,
                     onBack = { navController.popBackStack() },
-                    onPlayerClick = { teamId -> navController.navigate(DetailRoutes.playerDetail(teamId)) }
+                    onPlayerClick = { teamId -> navController.navigate(DetailRoutes.playerDetail(teamId)) },
+                    onSquadPlayerClick = { playerId -> navController.navigate(DetailRoutes.playerById(playerId)) }
                 )
             }
             composable(
@@ -149,6 +150,16 @@ fun MundialApp(container: AppContainer) {
                 val teamId = entry.arguments?.getString(DetailRoutes.PLAYER_ARG).orEmpty()
                 val vm: PlayerDetailViewModel = viewModel(
                     factory = PlayerDetailViewModel.Factory(container.teamRepository, teamId)
+                )
+                PlayerDetailScreen(viewModel = vm, onBack = { navController.popBackStack() })
+            }
+            composable(
+                route = DetailRoutes.PLAYER_BY_ID,
+                arguments = listOf(navArgument(DetailRoutes.PLAYER_ID_ARG) { type = NavType.LongType })
+            ) { entry ->
+                val playerId = entry.arguments?.getLong(DetailRoutes.PLAYER_ID_ARG) ?: 0L
+                val vm: PlayerDetailViewModel = viewModel(
+                    factory = PlayerDetailViewModel.FactoryForPlayer(container.teamRepository, playerId)
                 )
                 PlayerDetailScreen(viewModel = vm, onBack = { navController.popBackStack() })
             }

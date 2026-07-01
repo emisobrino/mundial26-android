@@ -58,6 +58,11 @@ class DefaultTeamRepository(
         return team.copy(squad = squad)
     }
 
+    override suspend fun player(playerId: Long): Player? {
+        fresh()
+        return playerDao.byId(playerId)?.toPlayer()
+    }
+
     override suspend fun topScorers(): List<Leader> {
         fresh()
         return playerDao.topScorers(10).mapIndexed { i, p -> p.toLeader(i + 1, p.goals) }.ifEmpty { MockData.topScorers }

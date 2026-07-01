@@ -55,6 +55,7 @@ fun TeamDetailScreen(
     viewModel: TeamDetailViewModel,
     onBack: () -> Unit,
     onPlayerClick: (String) -> Unit,
+    onSquadPlayerClick: (Long) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -74,7 +75,8 @@ fun TeamDetailScreen(
             )
             is TeamDetailUiState.Success -> TeamDetailContent(
                 team = current.team,
-                onPlayerClick = onPlayerClick
+                onPlayerClick = onPlayerClick,
+                onSquadPlayerClick = onSquadPlayerClick
             )
         }
     }
@@ -137,6 +139,7 @@ private fun ErrorContent(
 private fun TeamDetailContent(
     team: Team,
     onPlayerClick: (String) -> Unit,
+    onSquadPlayerClick: (Long) -> Unit,
     modifier: Modifier = Modifier
 ) {
     LazyColumn(
@@ -161,7 +164,7 @@ private fun TeamDetailContent(
             item { FormSection(form = team.form) }
         }
         if (team.squad.isNotEmpty()) {
-            item { SquadSection(squad = team.squad) }
+            item { SquadSection(squad = team.squad, onSquadPlayerClick = onSquadPlayerClick) }
         }
     }
 }
@@ -182,7 +185,11 @@ private fun posGroupOf(position: String): PosGroup {
 }
 
 @Composable
-private fun SquadSection(squad: List<Player>, modifier: Modifier = Modifier) {
+private fun SquadSection(
+    squad: List<Player>,
+    onSquadPlayerClick: (Long) -> Unit,
+    modifier: Modifier = Modifier
+) {
     // Mediocampistas ofensivos contienen "midfield" → se agrupan como medios (se evalúa antes que ataque).
     val grouped = squad
         .groupBy { posGroupOf(it.position) }
@@ -220,7 +227,7 @@ private fun SquadSection(squad: List<Player>, modifier: Modifier = Modifier) {
                     modifier = Modifier.padding(top = 12.dp, bottom = 2.dp)
                 )
                 players.sortedBy { it.name }.forEach { player ->
-                    SquadPlayerRow(player = player)
+                    SquadPlayerRow(player = player, onClick = { onSquadPlayerClick(player.id) })
                 }
             }
             Spacer(modifier = Modifier.height(8.dp))
@@ -229,10 +236,11 @@ private fun SquadSection(squad: List<Player>, modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun SquadPlayerRow(player: Player, modifier: Modifier = Modifier) {
+private fun SquadPlayerRow(player: Player, onClick: () -> Unit, modifier: Modifier = Modifier) {
     Row(
         modifier = modifier
             .fillMaxWidth()
+            .clickable { onClick() }
             .padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -559,7 +567,8 @@ private fun TeamDetailScreenPreview() {
         TeamDetailScreen(
             viewModel = viewModel,
             onBack = {},
-            onPlayerClick = {}
+            onPlayerClick = {},
+            onSquadPlayerClick = {}
         )
     }
 }
