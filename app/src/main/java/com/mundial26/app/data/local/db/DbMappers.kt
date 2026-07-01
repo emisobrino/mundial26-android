@@ -64,6 +64,19 @@ fun List<MatchEntity>.toBracket(): List<BracketRound> =
 
 fun PlayerEntity.toLeader(rank: Int, value: Int) = Leader(rank, name, tlaToIso(teamTla), value)
 
+/** Edad a partir de la fecha de nacimiento "yyyy-MM-dd" (0 si no hay dato). */
+fun ageFromDob(dob: String?): Int {
+    if (dob.isNullOrBlank()) return 0
+    return runCatching {
+        java.time.Period.between(java.time.LocalDate.parse(dob.take(10)), java.time.LocalDate.now()).years
+    }.getOrDefault(0)
+}
+
+fun PlayerEntity.toPlayer() = Player(
+    id = id, name = name, teamCode = teamTla, position = position,
+    age = ageFromDob(dateOfBirth), goals = goals, assists = assists
+)
+
 fun TeamEntity.toDomain() = Team(
     id = tla.lowercase(), name = name, code = tla,
     conf = runCatching { Confederation.valueOf(conf) }.getOrDefault(Confederation.OTHER),

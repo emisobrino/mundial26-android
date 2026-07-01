@@ -41,6 +41,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mundial26.app.data.mock.FakeTeamRepository
+import com.mundial26.app.domain.model.Player
 import com.mundial26.app.domain.model.Team
 import com.mundial26.app.ui.components.FlagAvatar
 import com.mundial26.app.ui.theme.MundialTheme
@@ -159,6 +160,121 @@ private fun TeamDetailContent(
         if (team.form.isNotEmpty()) {
             item { FormSection(form = team.form) }
         }
+        if (team.squad.isNotEmpty()) {
+            item { SquadSection(squad = team.squad) }
+        }
+    }
+}
+
+/** Orden y etiqueta de los cuatro grupos de posición del plantel. */
+private data class PosGroup(val order: Int, val label: String)
+
+private fun posGroupOf(position: String): PosGroup {
+    val p = position.lowercase()
+    return when {
+        p.contains("keeper") || p.contains("goal") -> PosGroup(0, "Arqueros")
+        p.contains("back") || p.contains("defen") -> PosGroup(1, "Defensores")
+        p.contains("midfield") || p.contains("medio") -> PosGroup(2, "Mediocampistas")
+        p.contains("forward") || p.contains("wing") || p.contains("offen") ||
+            p.contains("strik") || p.contains("attack") -> PosGroup(3, "Delanteros")
+        else -> PosGroup(4, "Otros")
+    }
+}
+
+@Composable
+private fun SquadSection(squad: List<Player>, modifier: Modifier = Modifier) {
+    // Mediocampistas ofensivos contienen "midfield" → se agrupan como medios (se evalúa antes que ataque).
+    val grouped = squad
+        .groupBy { posGroupOf(it.position) }
+        .toList()
+        .sortedBy { (g, _) -> g.order }
+
+    Column(modifier = modifier.fillMaxWidth()) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = "PLANTEL",
+                style = MaterialTheme.typography.labelLarge,
+                color = MundialTheme.colors.textTertiary
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = "${squad.size} jugadores",
+                style = MaterialTheme.typography.labelSmall,
+                color = MundialTheme.colors.textFaint
+            )
+        }
+        Spacer(modifier = Modifier.height(12.dp))
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(MundialTheme.shapes.medium)
+                .background(MundialTheme.colors.surface)
+                .padding(horizontal = 16.dp, vertical = 4.dp)
+        ) {
+            grouped.forEach { (group, players) ->
+                Text(
+                    text = group.label,
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MundialTheme.colors.brand,
+                    modifier = Modifier.padding(top = 12.dp, bottom = 2.dp)
+                )
+                players.sortedBy { it.name }.forEach { player ->
+                    SquadPlayerRow(player = player)
+                }
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+        }
+    }
+}
+
+@Composable
+private fun SquadPlayerRow(player: Player, modifier: Modifier = Modifier) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = player.name,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium,
+                color = MundialTheme.colors.textPrimary
+            )
+            if (player.age > 0) {
+                Text(
+                    text = "${player.age} años",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MundialTheme.colors.textFaint
+                )
+            }
+        }
+        if (player.goals > 0) {
+            StatChip(text = "${player.goals} G", tint = MundialTheme.colors.win)
+            Spacer(modifier = Modifier.width(6.dp))
+        }
+        if (player.assists > 0) {
+            StatChip(text = "${player.assists} A", tint = MundialTheme.colors.brand)
+        }
+    }
+}
+
+@Composable
+private fun StatChip(text: String, tint: Color, modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(6.dp))
+            .background(tint.copy(alpha = 0.16f))
+            .padding(horizontal = 8.dp, vertical = 3.dp)
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Bold,
+            color = tint
+        )
     }
 }
 

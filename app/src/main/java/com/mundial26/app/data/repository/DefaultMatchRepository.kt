@@ -1,5 +1,6 @@
 package com.mundial26.app.data.repository
 
+import com.mundial26.app.data.editorial.estimatedStats
 import com.mundial26.app.data.local.db.dao.MatchDao
 import com.mundial26.app.data.local.db.toBracket
 import com.mundial26.app.data.local.db.toDomain
@@ -28,6 +29,8 @@ class DefaultMatchRepository(
     override suspend fun match(id: String): Match? {
         val m = all().firstOrNull { it.id == id } ?: return null
         val events = runCatching { of.worldCup().matches.findEventsFor(m.day ?: "", m.teamA, m.teamB) }.getOrDefault(emptyList())
-        return m.copy(events = events)
+        // Sin fuente gratuita de stats por partido → estimación editorial (solo si ya se jugó).
+        val stats = if (m.status != MatchStatus.UPCOMING && m.stats.isEmpty()) estimatedStats(m) else m.stats
+        return m.copy(events = events, stats = stats)
     }
 }
