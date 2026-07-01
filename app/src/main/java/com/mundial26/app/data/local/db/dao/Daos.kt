@@ -11,6 +11,7 @@ import com.mundial26.app.data.local.db.entities.*
 @Dao interface PlayerDao {
     @Upsert suspend fun upsertAll(items: List<PlayerEntity>)
     @Query("SELECT * FROM players WHERE teamTla = :tla") suspend fun byTeam(tla: String): List<PlayerEntity>
+    @Query("SELECT * FROM players WHERE id = :id") suspend fun byId(id: Long): PlayerEntity?
     @Query("SELECT * FROM players ORDER BY goals DESC LIMIT :n") suspend fun topScorers(n: Int): List<PlayerEntity>
     @Query("SELECT * FROM players WHERE assists > 0 ORDER BY assists DESC LIMIT :n") suspend fun topAssists(n: Int): List<PlayerEntity>
     @Query("UPDATE players SET goals = :goals, assists = :assists WHERE teamTla = :tla AND name = :name") suspend fun updateStats(tla: String, name: String, goals: Int, assists: Int)

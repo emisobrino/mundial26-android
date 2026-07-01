@@ -37,13 +37,13 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mundial26.app.data.mock.FakeTeamRepository
-import com.mundial26.app.domain.model.Star
 import com.mundial26.app.ui.components.FlagAvatar
 import com.mundial26.app.ui.theme.MundialTheme
 
 /**
- * Pantalla Detalle de jugador: hero con dorsal/nombre/posición de la estrella
- * del equipo, estadísticas del Mundial y ficha del jugador.
+ * Pantalla Detalle de jugador: hero con dorsal (o iniciales) / nombre / posición,
+ * estadísticas del Mundial y ficha. Sirve para la estrella editorial y para
+ * cualquier jugador del plantel real.
  */
 @Composable
 fun PlayerDetailScreen(
@@ -67,12 +67,7 @@ fun PlayerDetailScreen(
                 ErrorContent(message = current.message, onRetry = viewModel::retry)
                 BackButton(onBack = onBack, modifier = Modifier.padding(12.dp))
             }
-            is PlayerDetailUiState.Success -> PlayerDetailContent(
-                star = current.star,
-                teamName = current.teamName,
-                teamFlag = current.teamFlag,
-                onBack = onBack
-            )
+            is PlayerDetailUiState.Success -> PlayerDetailContent(state = current, onBack = onBack)
         }
     }
 }
@@ -113,9 +108,7 @@ private fun ErrorContent(
 
 @Composable
 private fun PlayerDetailContent(
-    star: Star,
-    teamName: String,
-    teamFlag: String,
+    state: PlayerDetailUiState.Success,
     onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -126,17 +119,20 @@ private fun PlayerDetailContent(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
-        PlayerHero(star = star, teamName = teamName, teamFlag = teamFlag, onBack = onBack)
-        WorldCupStatsSection(star = star)
-        FichaSection(star = star)
+        PlayerHero(state = state, onBack = onBack)
+        WorldCupStatsSection(state = state)
+        if (state.note.isNotBlank()) NoteSection(note = state.note)
+        FichaSection(state = state)
     }
 }
 
+/** Iniciales a partir del nombre ("Julián Quiñones" → "JQ"). */
+private fun initialsOf(name: String): String =
+    name.split(" ").filter { it.isNotBlank() }.take(2).joinToString("") { it.first().uppercase() }
+
 @Composable
 private fun PlayerHero(
-    star: Star,
-    teamName: String,
-    teamFlag: String,
+    state: PlayerDetailUiState.Success,
     onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -164,7 +160,7 @@ private fun PlayerHero(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "${star.num}",
+                        text = if (state.number > 0) "${state.number}" else initialsOf(state.name),
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Black,
                         color = Color.White
@@ -173,10 +169,10 @@ private fun PlayerHero(
 
                 Column {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        FlagAvatar(iso = teamFlag, code = "", size = 20.dp)
+                        FlagAvatar(iso = state.teamFlag, code = "", size = 20.dp)
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = teamName,
+                            text = state.teamName,
                             style = MaterialTheme.typography.labelLarge,
                             fontWeight = FontWeight.Bold,
                             color = Color.White
@@ -184,24 +180,26 @@ private fun PlayerHero(
                     }
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = star.name,
+                        text = state.name,
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Black,
                         color = Color.White
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(MundialTheme.colors.win.copy(alpha = 0.16f))
-                            .padding(horizontal = 10.dp, vertical = 5.dp)
-                    ) {
-                        Text(
-                            text = star.pos,
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = MundialTheme.colors.greenAccentLight
-                        )
+                    if (state.position.isNotBlank()) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(MundialTheme.colors.win.copy(alpha = 0.16f))
+                                .padding(horizontal = 10.dp, vertical = 5.dp)
+                        ) {
+                            Text(
+                                text = state.position,
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MundialTheme.colors.greenAccentLight
+                            )
+                        }
                     }
                 }
             }
@@ -244,7 +242,15 @@ private fun TricolorStripe(modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun WorldCupStatsSection(star: Star, modifier: Modifier = Modifier) {
+private fun WorldCupStatsSection(state: PlayerDetailUiState.Success, modifier: Modifier = Modifier) {
+    // Tarjetas adaptativas: solo mostramos las métricas con dato real.
+    val cards = buildList {
+        add("${state.goals}" to "Goles")
+        add("${state.assists}" to "Asistencias")
+        if (state.age > 0) add("${state.age}" to "Edad")
+        if (state.rating > 0.0) add("%.1f".format(state.rating) to "Valoración")
+    }
+
     Column(modifier = modifier.fillMaxWidth()) {
         Text(
             text = "EN EL MUNDIAL",
@@ -252,36 +258,17 @@ private fun WorldCupStatsSection(star: Star, modifier: Modifier = Modifier) {
             color = MundialTheme.colors.textTertiary
         )
         Spacer(modifier = Modifier.height(12.dp))
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            StatCard(
-                value = "${star.stats.pj}",
-                label = "Partidos",
-                modifier = Modifier.weight(1f)
-            )
-            StatCard(
-                value = "${star.stats.goals}",
-                label = "Goles",
-                modifier = Modifier.weight(1f)
-            )
-        }
-        Spacer(modifier = Modifier.height(12.dp))
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            StatCard(
-                value = "${star.stats.assists}",
-                label = "Asistencias",
-                modifier = Modifier.weight(1f)
-            )
-            StatCard(
-                value = "%.1f".format(star.stats.rating),
-                label = "Valoración",
-                modifier = Modifier.weight(1f)
-            )
+        cards.chunked(2).forEach { row ->
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                row.forEach { (value, label) ->
+                    StatCard(value = value, label = label, modifier = Modifier.weight(1f))
+                }
+                if (row.size == 1) Spacer(modifier = Modifier.weight(1f))
+            }
+            Spacer(modifier = Modifier.height(12.dp))
         }
     }
 }
@@ -312,11 +299,32 @@ private fun StatCard(value: String, label: String, modifier: Modifier = Modifier
 }
 
 @Composable
-private fun FichaSection(star: Star, modifier: Modifier = Modifier) {
+private fun NoteSection(note: String, modifier: Modifier = Modifier) {
+    Column(modifier = modifier.fillMaxWidth()) {
+        Text(
+            text = "SCOUTING",
+            style = MaterialTheme.typography.labelLarge,
+            color = MundialTheme.colors.textTertiary
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+        Text(
+            text = note,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MundialTheme.colors.textSecondary,
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(MundialTheme.shapes.medium)
+                .background(MundialTheme.colors.surface)
+                .padding(16.dp)
+        )
+    }
+}
+
+@Composable
+private fun FichaSection(state: PlayerDetailUiState.Success, modifier: Modifier = Modifier) {
     val rows = buildList {
-        if (star.stats.club.isNotBlank()) add("Club" to star.stats.club)
-        if (star.stats.age > 0) add("Edad" to "${star.stats.age}")
-        if (star.stats.marketValue.isNotBlank()) add("Valor" to star.stats.marketValue)
+        if (state.club.isNotBlank()) add("Club" to state.club)
+        if (state.marketValue.isNotBlank()) add("Valor" to state.marketValue)
     }
     if (rows.isEmpty()) return
 

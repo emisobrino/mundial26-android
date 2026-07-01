@@ -8,13 +8,16 @@ import com.mundial26.app.data.local.db.toGroups
 import com.mundial26.app.data.local.db.toLeader
 import com.mundial26.app.data.local.db.toPlayer
 import com.mundial26.app.data.mock.MockData
+import com.mundial26.app.data.net.tlaToIso
+import com.mundial26.app.data.remote.fifa.FifaStatsSource
 import com.mundial26.app.data.sync.SyncManager
 import com.mundial26.app.domain.model.*
 import com.mundial26.app.domain.repository.TeamRepository
 
 class DefaultTeamRepository(
     private val sync: SyncManager, private val teamDao: TeamDao,
-    private val playerDao: PlayerDao, private val standingDao: StandingDao
+    private val playerDao: PlayerDao, private val standingDao: StandingDao,
+    private val fifa: FifaStatsSource = FifaStatsSource()
 ) : TeamRepository {
 
     private suspend fun fresh() { runCatching { sync.ensureFresh() } }
@@ -58,6 +61,11 @@ class DefaultTeamRepository(
         return team.copy(squad = squad)
     }
 
+    override suspend fun player(playerId: Long): Player? {
+        fresh()
+        return playerDao.byId(playerId)?.toPlayer()
+    }
+
     override suspend fun topScorers(): List<Leader> {
         fresh()
         return playerDao.topScorers(10).mapIndexed { i, p -> p.toLeader(i + 1, p.goals) }.ifEmpty { MockData.topScorers }
@@ -65,6 +73,14 @@ class DefaultTeamRepository(
 
     override suspend fun topAssists(): List<Leader> {
         fresh()
+        // football-data da las asistencias incompletas → prioridad: FIFA oficial (en vivo),
+        // luego el override editorial (offline), y al final lo que haya en la DB.
+        val fifaTop = runCatching { fifa.topAssists(10) }.getOrDefault(emptyList())
+        if (fifaTop.isNotEmpty()) return fifaTop
+        val editorial = EditorialSource.topAssists
+        if (editorial.isNotEmpty()) {
+            return editorial.mapIndexed { i, a -> Leader(i + 1, a.name, tlaToIso(a.tla), a.assists) }
+        }
         return playerDao.topAssists(10).mapIndexed { i, p -> p.toLeader(i + 1, p.assists) }.ifEmpty { MockData.topAssists }
     }
 }
