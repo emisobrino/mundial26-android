@@ -8,6 +8,7 @@ import com.mundial26.app.data.local.db.toGroups
 import com.mundial26.app.data.local.db.toLeader
 import com.mundial26.app.data.local.db.toPlayer
 import com.mundial26.app.data.mock.MockData
+import com.mundial26.app.data.net.tlaToIso
 import com.mundial26.app.data.sync.SyncManager
 import com.mundial26.app.domain.model.*
 import com.mundial26.app.domain.repository.TeamRepository
@@ -70,6 +71,11 @@ class DefaultTeamRepository(
 
     override suspend fun topAssists(): List<Leader> {
         fresh()
+        // football-data da las asistencias incompletas → si hay override editorial, tiene prioridad.
+        val editorial = EditorialSource.topAssists
+        if (editorial.isNotEmpty()) {
+            return editorial.mapIndexed { i, a -> Leader(i + 1, a.name, tlaToIso(a.tla), a.assists) }
+        }
         return playerDao.topAssists(10).mapIndexed { i, p -> p.toLeader(i + 1, p.assists) }.ifEmpty { MockData.topAssists }
     }
 }

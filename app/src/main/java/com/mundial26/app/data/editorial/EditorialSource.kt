@@ -354,4 +354,21 @@ object EditorialSource {
     )
 
     fun forCode(code: String): TeamEditorial? = byCode[code.uppercase()]
+
+    /**
+     * Override editorial de asistidores: football-data.org (free) devuelve las asistencias
+     * incompletas para el WC2026, así que curamos el ranking real (fuente: panel de estadísticas
+     * de Google). Se actualiza editando esta lista tras cada fecha. Vacía = usar football-data.
+     */
+    val topAssists: List<AssistLeader> = listOf(
+        AssistLeader("Michael Olise", "FRA", 5),
+        AssistLeader("Bruno Guimarães", "BRA", 4),
+        AssistLeader("Alexander Isak", "SWE", 3),
+        AssistLeader("Florian Wirtz", "GER", 3),
+        AssistLeader("Martin Ødegaard", "NOR", 3),
+        AssistLeader("Roberto Alvarado", "MEX", 3),
+    )
 }
+
+/** Fila curada del ranking de asistidores (nombre + selección TLA + asistencias). */
+data class AssistLeader(val name: String, val tla: String, val assists: Int)
