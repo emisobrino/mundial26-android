@@ -87,6 +87,11 @@ class TeamsViewModel(
         _view.value = view
     }
 
+    /** Aplica (una sola vez) la sub-vista pedida desde otra pantalla, si la hay. */
+    fun consumeRequestedView() {
+        requestedView?.let { _view.value = it; requestedView = null }
+    }
+
     /** Cambia el filtro de confederación activo. */
     fun selectConf(conf: ConfFilter) {
         _conf.value = conf
@@ -113,6 +118,12 @@ class TeamsViewModel(
     }
 
     companion object {
+        /**
+         * Sub-vista pedida desde otra pantalla antes de navegar a Equipos
+         * (ej. "Ver tabla" del Inicio → Grupos). Se consume una sola vez.
+         */
+        var requestedView: TeamsView? = null
+
         fun Factory(teamRepository: TeamRepository) = viewModelFactory {
             initializer {
                 TeamsViewModel(teamRepository)
