@@ -169,13 +169,21 @@ private fun HomeContent(
             )
         }
 
-        item {
-            LazyRow(
-                contentPadding = PaddingValues(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                items(state.live) { match ->
-                    LiveMatchCard(match = match, onClick = { onMatchClick(match.id) })
+        if (state.live.isNotEmpty()) {
+            item {
+                // A ancho completo; si hay varios en vivo se recorren con swipe.
+                val livePager = rememberPagerState { state.live.size }
+                HorizontalPager(
+                    state = livePager,
+                    contentPadding = PaddingValues(horizontal = 16.dp),
+                    pageSpacing = 12.dp
+                ) { page ->
+                    val match = state.live[page]
+                    LiveMatchCard(
+                        match = match,
+                        modifier = Modifier.fillMaxWidth(),
+                        onClick = { onMatchClick(match.id) }
+                    )
                 }
             }
         }

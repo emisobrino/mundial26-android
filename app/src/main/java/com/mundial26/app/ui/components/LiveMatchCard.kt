@@ -42,7 +42,6 @@ fun LiveMatchCard(
 ) {
     Column(
         modifier = modifier
-            .width(268.dp)
             .clip(MundialTheme.shapes.large)
             .background(MundialTheme.colors.surfaceDark)
             .clickable(enabled = onClick != null) { onClick?.invoke() }
@@ -143,7 +142,9 @@ private fun LiveMatchCardPreview() {
     MundialTheme {
         LiveMatchCard(
             match = MockData.matches[0],
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
         )
     }
 }
