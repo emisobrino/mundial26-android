@@ -59,8 +59,14 @@ fun resolveCross(placeholder: String, byNumber: Map<Int, FifaMatchRef>): String 
     return if (wantWinner) "Gan. $num" else "Perd. $num"
 }
 
-/** Estado en vivo de un partido según FIFA. */
-data class FifaLiveInfo(val homeTla: String, val awayTla: String, val minute: Int?, val scoreHome: Int?, val scoreAway: Int?)
+/** Estado en vivo de un partido según FIFA. El feed /live incluye también recién terminados y por empezar. */
+data class FifaLiveInfo(
+    val homeTla: String, val awayTla: String,
+    val minute: Int?, val scoreHome: Int?, val scoreAway: Int?,
+    val status: Int = 1                 // 3 = en juego, 0 = terminado, 1 = por empezar
+) {
+    val inPlay: Boolean get() = status == 3
+}
 
 /**
  * Día dado ± 1 (para emparejar un día LOCAL del dispositivo con el día UTC de las
@@ -153,7 +159,8 @@ fun parseFifaLive(json: String): List<FifaLiveInfo> =
             FifaLiveInfo(
                 homeTla = str(home, "Abbreviation") ?: "", awayTla = str(away, "Abbreviation") ?: "",
                 minute = parseFifaMinute(str(m, "MatchTime")),
-                scoreHome = str(home, "Score")?.toIntOrNull(), scoreAway = str(away, "Score")?.toIntOrNull()
+                scoreHome = str(home, "Score")?.toIntOrNull(), scoreAway = str(away, "Score")?.toIntOrNull(),
+                status = str(m, "MatchStatus")?.toIntOrNull() ?: 1
             )
         }.getOrNull()
     } ?: emptyList()
@@ -211,11 +218,17 @@ class FifaMatchSource(private val client: OkHttpClient = OkHttpClient()) {
         events
     }
 
-    /** Partidos en curso ahora según FIFA (minuto oficial + marcador); vacío si falla. */
+    private var liveCache: Pair<Long, List<FifaLiveInfo>>? = null
+    private val liveTtl = 60 * 1000L
+
+    /** Partidos en curso ahora según FIFA (minuto oficial + marcador); vacío si falla. Caché 60 s. */
     suspend fun liveNow(): List<FifaLiveInfo> = withContext(Dispatchers.IO) {
-        runCatching {
+        liveCache?.let { (at, l) -> if (System.currentTimeMillis() - at < liveTtl) return@withContext l }
+        val result = runCatching {
             get("https://api.fifa.com/api/v3/live/football?idCompetition=$COMP&idSeason=$SEASON&language=es&count=20")
                 ?.let(::parseFifaLive).orEmpty()
         }.getOrDefault(emptyList())
+        liveCache = System.currentTimeMillis() to result
+        result
     }
 }

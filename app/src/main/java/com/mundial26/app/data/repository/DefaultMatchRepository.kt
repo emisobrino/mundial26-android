@@ -41,27 +41,35 @@ class DefaultMatchRepository(
         if (Regex("[A-Z]{3}").matches(label)) com.mundial26.app.data.net.tlaToIso(label) else ""
     override suspend fun refresh() { runCatching { sync.forceRefresh() } }
 
-    /** Superpone minuto oficial y marcador en vivo de FIFA (la DB puede tener hasta 6 h de atraso). */
+    /**
+     * Superpone el estado en vivo de FIFA: minuto oficial, marcador y —clave— la
+     * PROMOCIÓN a LIVE cuando FIFA ya lo da en juego pero football-data (nuestra DB,
+     * que actualiza con retraso) todavía lo tiene como próximo.
+     */
     private fun Match.withLive(live: List<FifaLiveInfo>): Match {
         val info = live.firstOrNull {
             (it.homeTla == teamA && it.awayTla == teamB) || (it.homeTla == teamB && it.awayTla == teamA)
         } ?: return this
         val flipped = info.homeTla != teamA
+        val promoted = if (info.inPlay && status != MatchStatus.FINISHED) MatchStatus.LIVE else status
         return copy(
-            minute = info.minute ?: minute,
+            status = promoted,
+            minute = info.minute ?: minute ?: (if (promoted == MatchStatus.LIVE) 1 else null),
             scoreA = (if (flipped) info.scoreAway else info.scoreHome) ?: scoreA,
             scoreB = (if (flipped) info.scoreHome else info.scoreAway) ?: scoreB
         )
     }
 
-    override suspend fun liveMatches(): List<Match> {
-        val live = all().filter { it.status == MatchStatus.LIVE }
-        if (live.isEmpty()) return live
+    private suspend fun allWithLive(): List<Match> {
+        val list = all()
         val fifaLive = runCatching { fifa.liveNow() }.getOrDefault(emptyList())
-        return live.map { it.withLive(fifaLive) }
+        if (fifaLive.isEmpty()) return list
+        return list.map { it.withLive(fifaLive) }
     }
-    override suspend fun resultsAndUpcoming() = all().filter { it.status != MatchStatus.LIVE }
-    override suspend fun byDay() = all().filter { it.day != null }.groupBy { it.day!! }
+
+    override suspend fun liveMatches() = allWithLive().filter { it.status == MatchStatus.LIVE }
+    override suspend fun resultsAndUpcoming() = allWithLive().filter { it.status != MatchStatus.LIVE }
+    override suspend fun byDay() = allWithLive().filter { it.day != null }.groupBy { it.day!! }
     override suspend fun bracket(): List<BracketRound> {
         runCatching { sync.ensureFresh() }
         val entities = matchDao.all().map { e ->
@@ -73,11 +81,7 @@ class DefaultMatchRepository(
         return entities.toBracket().ifEmpty { MockData.bracket }
     }
     override suspend fun match(id: String): Match? {
-        var m = all().firstOrNull { it.id == id } ?: return null
-        if (m.status == MatchStatus.LIVE) {
-            val fifaLive = runCatching { fifa.liveNow() }.getOrDefault(emptyList())
-            m = m.withLive(fifaLive)
-        }
+        val m = allWithLive().firstOrNull { it.id == id } ?: return null
         // Eventos: timeline oficial de FIFA (goles, tarjetas, cambios); openfootball como fallback.
         val events = runCatching {
             fifa.findMatch(m.day, m.teamA, m.teamB)?.let { fifa.events(it) }.orEmpty()

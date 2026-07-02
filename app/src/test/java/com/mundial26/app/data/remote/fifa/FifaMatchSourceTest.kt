@@ -151,6 +151,22 @@ class FifaMatchSourceTest {
         assertEquals(63, live[0].minute)
         assertEquals(1, live[0].scoreHome)
         assertEquals(0, live[0].scoreAway)
+        assertTrue(live[0].inPlay)   // MatchStatus 3 = en juego
+    }
+
+    @Test fun live_distingue_en_juego_de_por_empezar_y_terminado() {
+        val json = """
+            {"Results":[
+              {"IdMatch":"1","MatchTime":"0'","MatchStatus":1,
+               "HomeTeam":{"IdTeam":"a","Abbreviation":"POR"},"AwayTeam":{"IdTeam":"b","Abbreviation":"CRO"}},
+              {"IdMatch":"2","MatchTime":"101'","MatchStatus":0,
+               "HomeTeam":{"IdTeam":"c","Score":2,"Abbreviation":"USA"},"AwayTeam":{"IdTeam":"d","Score":0,"Abbreviation":"BIH"}}
+            ]}
+        """.trimIndent()
+        val live = parseFifaLive(json)
+        assertEquals(2, live.size)
+        assertFalse(live[0].inPlay)   // por empezar
+        assertFalse(live[1].inPlay)   // terminado
     }
 
     @Test fun json_invalido_no_explota() {
