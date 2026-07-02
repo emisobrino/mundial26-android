@@ -183,6 +183,15 @@ private fun MatchHero(match: Match, modifier: Modifier = Modifier) {
                     color = Color.White,
                     textAlign = TextAlign.Center
                 )
+                if (match.penA != null && match.penB != null) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "(${match.penA} - ${match.penB} penales)",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.White.copy(alpha = 0.7f),
+                        textAlign = TextAlign.Center
+                    )
+                }
                 if (match.status == MatchStatus.LIVE && match.minute != null) {
                     Spacer(modifier = Modifier.height(8.dp))
                     Row(

@@ -33,6 +33,7 @@ import com.mundial26.app.ui.playerdetail.PlayerDetailViewModel
 import com.mundial26.app.ui.teamdetail.TeamDetailScreen
 import com.mundial26.app.ui.teamdetail.TeamDetailViewModel
 import com.mundial26.app.ui.teams.TeamsScreen
+import com.mundial26.app.ui.teams.TeamsView
 import com.mundial26.app.ui.teams.TeamsViewModel
 
 @Composable
@@ -92,7 +93,15 @@ fun MundialApp(container: AppContainer) {
                     onMatchClick = { id -> navController.navigate(DetailRoutes.matchDetail(id)) },
                     onNewsClick = openNews,
                     onTeamClick = { id -> navController.navigate(DetailRoutes.teamDetail(id)) },
-                    onLeadersClick = { navController.navigate(DetailRoutes.LEADERS) }
+                    onLeadersClick = { navController.navigate(DetailRoutes.LEADERS) },
+                    onSeeTable = {
+                        TeamsViewModel.requestedView = TeamsView.STANDINGS
+                        navController.navigate(TopDestination.TEAMS.route) {
+                            launchSingleTop = true
+                            restoreState = true
+                            popUpTo(TopDestination.HOME.route) { saveState = true }
+                        }
+                    }
                 )
             }
             composable(TopDestination.MATCHES.route) {

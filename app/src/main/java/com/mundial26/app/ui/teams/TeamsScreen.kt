@@ -57,6 +57,9 @@ fun TeamsScreen(
     val conf by viewModel.conf.collectAsStateWithLifecycle()
     val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
 
+    // Si otra pantalla pidió una sub-vista (ej. "Ver tabla" del Inicio → Grupos), aplicarla al entrar.
+    androidx.compose.runtime.LaunchedEffect(Unit) { viewModel.consumeRequestedView() }
+
     Column(
         modifier = modifier
             .fillMaxSize()

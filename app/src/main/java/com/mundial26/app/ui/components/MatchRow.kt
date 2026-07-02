@@ -189,13 +189,23 @@ private fun CompactContent(match: Match, modifier: Modifier = Modifier) {
 @Composable
 private fun ScoreOrTime(match: Match) {
     if (match.scoreA != null && match.scoreB != null) {
-        Text(
-            text = "${match.scoreA} - ${match.scoreB}",
-            style = MaterialTheme.typography.bodyLarge,
-            fontWeight = FontWeight.Bold,
-            color = MundialTheme.colors.textPrimary,
-            textAlign = TextAlign.Center
-        )
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(
+                text = "${match.scoreA} - ${match.scoreB}",
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Bold,
+                color = MundialTheme.colors.textPrimary,
+                textAlign = TextAlign.Center
+            )
+            if (match.penA != null && match.penB != null) {
+                Text(
+                    text = "(${match.penA}-${match.penB} pen)",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MundialTheme.colors.textTertiary,
+                    textAlign = TextAlign.Center
+                )
+            }
+        }
     } else {
         Text(
             text = "vs",
@@ -222,14 +232,14 @@ private fun FullNamesContent(match: Match, modifier: Modifier = Modifier) {
         Column(horizontalAlignment = Alignment.End) {
             if (match.scoreA != null && match.scoreB != null) {
                 Text(
-                    text = "${match.scoreA}",
+                    text = "${match.scoreA}" + (match.penA?.let { " ($it)" } ?: ""),
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.Bold,
                     color = MundialTheme.colors.textPrimary
                 )
                 Spacer(modifier = Modifier.height(20.dp))
                 Text(
-                    text = "${match.scoreB}",
+                    text = "${match.scoreB}" + (match.penB?.let { " ($it)" } ?: ""),
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.Bold,
                     color = MundialTheme.colors.textPrimary

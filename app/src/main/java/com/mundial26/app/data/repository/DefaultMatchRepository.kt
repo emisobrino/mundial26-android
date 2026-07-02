@@ -20,8 +20,25 @@ class DefaultMatchRepository(
 ) : MatchRepository {
     private suspend fun all(): List<Match> {
         runCatching { sync.ensureFresh() }
-        return matchDao.all().map { it.toDomain() }.ifEmpty { MockData.matches }
+        val entities = matchDao.all()
+        if (entities.isEmpty()) return MockData.matches
+        return entities.map { e ->
+            val m = e.toDomain()
+            // Cruces de eliminatorias sin definir: mostrar el posible cruce según FIFA
+            // ("PAR", "ESP/AUT" o "Gan. 93") en lugar de una fila vacía.
+            if (m.teamA.isBlank() || m.teamB.isBlank()) {
+                val cross = runCatching { fifa.crossesFor(e.utcDate) }.getOrNull()
+                if (cross != null) m.copy(
+                    teamA = cross.first, teamB = cross.second,
+                    flagA = knownIso(cross.first), flagB = knownIso(cross.second)
+                ) else m
+            } else m
+        }
     }
+
+    /** ISO-2 solo si el texto es un TLA real (3 letras); para "ESP/AUT" o "Gan. 93" no hay bandera. */
+    private fun knownIso(label: String): String =
+        if (Regex("[A-Z]{3}").matches(label)) com.mundial26.app.data.net.tlaToIso(label) else ""
     override suspend fun refresh() { runCatching { sync.forceRefresh() } }
 
     /** Superpone minuto oficial y marcador en vivo de FIFA (la DB puede tener hasta 6 h de atraso). */
@@ -47,7 +64,13 @@ class DefaultMatchRepository(
     override suspend fun byDay() = all().filter { it.day != null }.groupBy { it.day!! }
     override suspend fun bracket(): List<BracketRound> {
         runCatching { sync.ensureFresh() }
-        return matchDao.all().toBracket().ifEmpty { MockData.bracket }
+        val entities = matchDao.all().map { e ->
+            if (e.homeTla.isBlank() || e.awayTla.isBlank()) {
+                val cross = runCatching { fifa.crossesFor(e.utcDate) }.getOrNull()
+                if (cross != null) e.copy(homeTla = cross.first, awayTla = cross.second) else e
+            } else e
+        }
+        return entities.toBracket().ifEmpty { MockData.bracket }
     }
     override suspend fun match(id: String): Match? {
         var m = all().firstOrNull { it.id == id } ?: return null

@@ -27,7 +27,7 @@ sealed interface HomeUiState {
         val live: List<Match>,
         val results: List<Match>,
         val featured: Team,
-        val groupB: Group,
+        val groups: List<Group>,
         val scorers: List<Leader>,
         val assists: List<Leader>,
         val news: List<NewsItem>
@@ -85,7 +85,6 @@ class HomeViewModel(
     private suspend fun loadData() {
         try {
             val groups = teamRepository.groups()
-                val groupB = groups.firstOrNull { it.name.contains("B") } ?: groups[1]
                 // Resultados recientes primero (más nuevos arriba), luego los próximos por jugarse.
                 val resultsAndUpcoming = matchRepository.resultsAndUpcoming()
                 val recentFinished = resultsAndUpcoming
@@ -98,7 +97,7 @@ class HomeViewModel(
                     live = matchRepository.liveMatches(),
                     results = (recentFinished.take(5) + nextUpcoming.take(3)),
                     featured = teamRepository.featured(),
-                    groupB = groupB,
+                    groups = groups,
                     scorers = teamRepository.topScorers(),
                     assists = teamRepository.topAssists(),
                     news = newsRepository.news().take(4)

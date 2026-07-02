@@ -27,7 +27,8 @@ data class StandingEntity(
 data class MatchEntity(
     @PrimaryKey val id: String, val utcDate: String, val status: String,
     val stage: String, val grp: String, val homeTla: String, val awayTla: String,
-    val scoreHome: Int?, val scoreAway: Int?
+    val scoreHome: Int?, val scoreAway: Int?,
+    val penHome: Int? = null, val penAway: Int? = null   // definición por penales
 )
 
 @Entity(tableName = "sync_meta")

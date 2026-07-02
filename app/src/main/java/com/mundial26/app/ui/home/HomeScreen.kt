@@ -17,6 +17,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ChevronRight
@@ -62,6 +64,7 @@ fun HomeScreen(
     onNewsClick: (String) -> Unit,
     onTeamClick: (String) -> Unit,
     onLeadersClick: () -> Unit,
+    onSeeTable: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -83,6 +86,7 @@ fun HomeScreen(
             onNewsClick = onNewsClick,
             onTeamClick = onTeamClick,
             onLeadersClick = onLeadersClick,
+            onSeeTable = onSeeTable,
             modifier = modifier
         )
     }
@@ -137,6 +141,7 @@ private fun HomeContent(
     onNewsClick: (String) -> Unit,
     onTeamClick: (String) -> Unit,
     onLeadersClick: () -> Unit,
+    onSeeTable: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     PullToRefreshBox(
@@ -196,21 +201,45 @@ private fun HomeContent(
             )
         }
 
-        item {
-            Column(
-                modifier = Modifier.padding(horizontal = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                SectionHeader(
-                    title = "Posiciones · ${state.groupB.name}",
-                    actionText = "Ver tabla",
-                    onAction = { onNavigateToTab(TopDestination.TEAMS.route) }
-                )
-                StandingsTable(
-                    group = state.groupB,
-                    compact = true,
-                    onRowClick = { onNavigateToTab(TopDestination.TEAMS.route) }
-                )
+        if (state.groups.isNotEmpty()) {
+            item {
+                // Pager: swipe horizontal para recorrer los 12 grupos (arranca en el B).
+                val pagerState = rememberPagerState(
+                    initialPage = state.groups.indexOfFirst { it.name.contains("B") }.coerceAtLeast(0)
+                ) { state.groups.size }
+                Column(
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    SectionHeader(
+                        title = "Posiciones · ${state.groups[pagerState.currentPage].name}",
+                        actionText = "Ver tabla",
+                        onAction = onSeeTable
+                    )
+                    HorizontalPager(state = pagerState, pageSpacing = 12.dp) { page ->
+                        StandingsTable(
+                            group = state.groups[page],
+                            compact = true,
+                            onRowClick = { onSeeTable() }
+                        )
+                    }
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        modifier = Modifier.align(Alignment.CenterHorizontally)
+                    ) {
+                        repeat(state.groups.size) { i ->
+                            Box(
+                                modifier = Modifier
+                                    .size(6.dp)
+                                    .clip(CircleShape)
+                                    .background(
+                                        if (i == pagerState.currentPage) MundialTheme.colors.brand
+                                        else MundialTheme.colors.border
+                                    )
+                            )
+                        }
+                    }
+                }
             }
         }
 

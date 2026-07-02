@@ -34,7 +34,7 @@ fun MatchEntity.toDomain(
         day = local?.toLocalDate()?.toString() ?: utcDate.take(10),
         group = prettyGroup(stage, grp), stadium = "",
         teamA = homeTla, teamB = awayTla, flagA = tlaToIso(homeTla), flagB = tlaToIso(awayTla),
-        scoreA = scoreHome, scoreB = scoreAway
+        scoreA = scoreHome, scoreB = scoreAway, penA = penHome, penB = penAway
     )
 }
 
@@ -63,7 +63,8 @@ fun List<MatchEntity>.toBracket(): List<BracketRound> =
                         a = m.homeTla, b = m.awayTla,
                         flagA = tlaToIso(m.homeTla), flagB = tlaToIso(m.awayTla),
                         sa = m.scoreHome, sb = m.scoreAway,
-                        done = statusOf(m.status) == MatchStatus.FINISHED
+                        done = statusOf(m.status) == MatchStatus.FINISHED,
+                        pa = m.penHome, pb = m.penAway
                     )
                 }
             )
