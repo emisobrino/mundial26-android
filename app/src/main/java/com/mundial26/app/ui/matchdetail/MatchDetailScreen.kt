@@ -19,6 +19,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.outlined.SportsSoccer
+import androidx.compose.material.icons.outlined.SwapHoriz
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -168,14 +170,16 @@ private fun MatchHero(match: Match, modifier: Modifier = Modifier) {
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 20.dp, vertical = 20.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            TeamColumn(iso = match.flagA, code = match.teamA)
+            // Tres tercios iguales → el marcador y la píldora quedan en el centro geométrico.
+            Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                TeamColumn(iso = match.flagA, code = match.teamA)
+            }
 
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.widthIn(min = 100.dp)
+                modifier = Modifier.weight(1f)
             ) {
                 Text(
                     text = "${match.scoreA ?: 0} - ${match.scoreB ?: 0}",
@@ -213,18 +217,22 @@ private fun MatchHero(match: Match, modifier: Modifier = Modifier) {
                 }
             }
 
-            TeamColumn(iso = match.flagB, code = match.teamB)
+            Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                TeamColumn(iso = match.flagB, code = match.teamB)
+            }
         }
 
-        Text(
-            text = match.stadium,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MundialTheme.colors.textTertiary,
-            textAlign = TextAlign.Center,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 20.dp)
-        )
+        if (match.stadium.isNotBlank()) {
+            Text(
+                text = match.stadium,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MundialTheme.colors.textTertiary,
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 20.dp)
+            )
+        }
     }
 }
 
@@ -267,17 +275,20 @@ private fun StatsSection(stats: List<MatchStat>, estimated: Boolean = false, mod
             color = MundialTheme.colors.textTertiary
         )
         Spacer(modifier = Modifier.height(12.dp))
+        // Tarjeta oscura con franja tricolor, a juego con el hero y los widgets del Inicio.
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(MundialTheme.shapes.medium)
-                .background(MundialTheme.colors.surface)
-                .padding(horizontal = 16.dp, vertical = 8.dp)
+                .clip(MundialTheme.shapes.large)
+                .background(MundialTheme.colors.surfaceDark)
         ) {
-            stats.forEachIndexed { index, stat ->
-                StatRow(stat = stat)
-                if (index != stats.lastIndex) {
-                    Spacer(modifier = Modifier.height(14.dp))
+            TricolorStripe()
+            Column(modifier = Modifier.padding(16.dp)) {
+                stats.forEachIndexed { index, stat ->
+                    StatRow(stat = stat)
+                    if (index != stats.lastIndex) {
+                        Spacer(modifier = Modifier.height(14.dp))
+                    }
                 }
             }
         }
@@ -292,7 +303,7 @@ private fun StatsSection(stats: List<MatchStat>, estimated: Boolean = false, mod
 
 @Composable
 private fun StatRow(stat: MatchStat, modifier: Modifier = Modifier) {
-    Column(modifier = modifier.fillMaxWidth().padding(vertical = 6.dp)) {
+    Column(modifier = modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -302,18 +313,18 @@ private fun StatRow(stat: MatchStat, modifier: Modifier = Modifier) {
                 text = "${stat.a}",
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.Bold,
-                color = MundialTheme.colors.brand
+                color = Color.White
             )
             Text(
                 text = stat.label,
                 style = MaterialTheme.typography.bodyMedium,
-                color = MundialTheme.colors.textSecondary
+                color = Color.White.copy(alpha = 0.6f)
             )
             Text(
                 text = "${stat.b}",
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.Bold,
-                color = MundialTheme.colors.textPrimary
+                color = Color.White
             )
         }
         Spacer(modifier = Modifier.height(8.dp))
@@ -336,7 +347,7 @@ private fun StatRow(stat: MatchStat, modifier: Modifier = Modifier) {
                 modifier = Modifier
                     .weight(weightB.coerceAtLeast(0.001f))
                     .fillMaxSize()
-                    .background(MundialTheme.colors.border)
+                    .background(Color.White.copy(alpha = 0.25f))
             )
         }
     }
@@ -381,12 +392,6 @@ private fun EventRow(event: MatchEvent, modifier: Modifier = Modifier) {
 @Composable
 private fun EventContent(event: MatchEvent, isSideA: Boolean, modifier: Modifier = Modifier) {
     val minuteText = "${event.min}'"
-    val dotColor = when (event.kind) {
-        EventKind.GOAL -> MundialTheme.colors.win
-        EventKind.YELLOW -> MundialTheme.colors.yellow
-        EventKind.RED -> MundialTheme.colors.live
-        EventKind.SUB -> MundialTheme.colors.textTertiary
-    }
 
     val minuteLabel: @Composable () -> Unit = {
         Text(
@@ -395,14 +400,7 @@ private fun EventContent(event: MatchEvent, isSideA: Boolean, modifier: Modifier
             color = MundialTheme.colors.textTertiary
         )
     }
-    val dot: @Composable () -> Unit = {
-        Box(
-            modifier = Modifier
-                .size(8.dp)
-                .clip(CircleShape)
-                .background(dotColor)
-        )
-    }
+    val icon: @Composable () -> Unit = { EventIcon(kind = event.kind) }
     val playerLabel: @Composable () -> Unit = {
         Text(
             text = event.player,
@@ -416,16 +414,47 @@ private fun EventContent(event: MatchEvent, isSideA: Boolean, modifier: Modifier
         if (isSideA) {
             minuteLabel()
             Spacer(modifier = Modifier.width(8.dp))
-            dot()
+            icon()
             Spacer(modifier = Modifier.width(8.dp))
             playerLabel()
         } else {
             playerLabel()
             Spacer(modifier = Modifier.width(8.dp))
-            dot()
+            icon()
             Spacer(modifier = Modifier.width(8.dp))
             minuteLabel()
         }
+    }
+}
+
+/** Icono por tipo de evento: pelota (gol), tarjeta amarilla/roja, flechas (cambio). */
+@Composable
+private fun EventIcon(kind: EventKind, modifier: Modifier = Modifier) {
+    when (kind) {
+        EventKind.GOAL -> Icon(
+            imageVector = Icons.Outlined.SportsSoccer,
+            contentDescription = "Gol",
+            tint = MundialTheme.colors.textPrimary,
+            modifier = modifier.size(18.dp)
+        )
+        EventKind.YELLOW -> Box(
+            modifier = modifier
+                .size(width = 11.dp, height = 15.dp)
+                .clip(RoundedCornerShape(2.dp))
+                .background(MundialTheme.colors.yellow)
+        )
+        EventKind.RED -> Box(
+            modifier = modifier
+                .size(width = 11.dp, height = 15.dp)
+                .clip(RoundedCornerShape(2.dp))
+                .background(MundialTheme.colors.live)
+        )
+        EventKind.SUB -> Icon(
+            imageVector = Icons.Outlined.SwapHoriz,
+            contentDescription = "Cambio",
+            tint = MundialTheme.colors.textTertiary,
+            modifier = modifier.size(18.dp)
+        )
     }
 }
 
