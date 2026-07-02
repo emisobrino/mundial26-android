@@ -174,25 +174,32 @@ class FifaMatchSourceTest {
     private val matchStatsJson = """
         {
           "43969": [["Possession",0.57,false],["AttemptAtGoal",11,false],["AttemptAtGoalOnTarget",5,false],
-                    ["Corners",6,false],["FoulsFor",5,false],["Offsides",1,false],["YellowCards",0,false],["XG",1.1,false]],
+                    ["Passes",307,false],["PassesCompleted",279,false],
+                    ["Corners",6,false],["FoulsFor",5,false],["Offsides",1,false],
+                    ["YellowCards",0,false],["RedCards",0,false],["XG",1.1,false]],
           "43934": [["Possession",0.32,false],["AttemptAtGoal",3,false],["AttemptAtGoalOnTarget",1,false],
-                    ["Corners",2,false],["FoulsFor",3,false],["Offsides",0,false],["YellowCards",2,false],["XG",0.03,false]]
+                    ["Passes",168,false],["PassesCompleted",134,false],
+                    ["Corners",2,false],["FoulsFor",3,false],["Offsides",0,false],
+                    ["YellowCards",2,false],["RedCards",1,false],["XG",0.03,false]]
         }
     """.trimIndent()
 
     @Test fun stats_oficiales_del_partido_con_lado_correcto() {
         val stats = parseFifaMatchStats(matchStatsJson, homeTeamId = "43969")
-        assertEquals(7, stats.size)
-        val pos = stats[0]
-        assertEquals("Posesión %", pos.label)
-        assertEquals(57, pos.a)   // fracción 0.57 → 57
-        assertEquals(32, pos.b)
-        val shots = stats[1]
-        assertEquals("Remates", shots.label)
-        assertEquals(11, shots.a)
-        assertEquals(3, shots.b)
-        assertEquals("Amarillas", stats[6].label)
-        assertEquals(2, stats[6].b)
+        val byLabel = stats.associate { it.label to (it.a to it.b) }
+
+        // Posesión normalizada a 100 como Google: 0.57/(0.57+0.32) = 64%.
+        assertEquals(64 to 36, byLabel["Posesión %"])
+        assertEquals(11 to 3, byLabel["Remates"])
+        assertEquals(5 to 1, byLabel["Remates al arco"])
+        assertEquals(307 to 168, byLabel["Pases"])
+        assertEquals(91 to 80, byLabel["Precisión de pases %"])   // 279/307, 134/168
+        assertEquals(6 to 2, byLabel["Córners"])
+        assertEquals(5 to 3, byLabel["Faltas"])
+        assertEquals(1 to 0, byLabel["Posición adelantada"])
+        assertEquals(0 to 2, byLabel["Amarillas"])
+        assertEquals(0 to 1, byLabel["Rojas"])
+        assertEquals(10, stats.size)
     }
 
     @Test fun stats_sin_equipo_local_devuelve_vacio() {

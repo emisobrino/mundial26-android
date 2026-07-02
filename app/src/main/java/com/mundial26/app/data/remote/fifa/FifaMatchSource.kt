@@ -150,20 +150,12 @@ fun parseFifaTimeline(json: String, homeTeamId: String): List<MatchEvent> =
         }.getOrNull()
     } ?: emptyList()
 
-/** Stats oficiales que mostramos, en orden, con su etiqueta en español. */
-private val MATCH_STAT_KEYS = listOf(
-    "Possession" to "Posesión %",          // viene como fracción (0.57)
-    "AttemptAtGoal" to "Remates",
-    "AttemptAtGoalOnTarget" to "Remates al arco",
-    "Corners" to "Córners",
-    "FoulsFor" to "Faltas",
-    "Offsides" to "Fuera de juego",
-    "YellowCards" to "Amarillas"
-)
-
 /**
  * Stats oficiales de un partido desde `fdh-api.../stats/match/{idIfes}/teams.json`:
  * `{ "<idEquipo>": [["Possession",0.57,bool], ...], ... }`. El lado A es `homeTeamId`.
+ * Mismo set y criterio que el panel de Google (que usa esta fuente): la posesión
+ * se normaliza a 100 (FIFA descuenta el tiempo disputado) y la precisión de pases
+ * se deriva de PassesCompleted/Passes.
  */
 fun parseFifaMatchStats(json: String, homeTeamId: String): List<MatchStat> = runCatching {
     val obj = AppJson.parseToJsonElement(json).jsonObject
@@ -176,14 +168,37 @@ fun parseFifaMatchStats(json: String, homeTeamId: String): List<MatchStat> = run
     val home = statsOf(homeTeamId) ?: return@runCatching emptyList()
     val awayId = obj.keys.firstOrNull { it != homeTeamId } ?: return@runCatching emptyList()
     val away = statsOf(awayId) ?: return@runCatching emptyList()
-    fun v(m: Map<String, Double>, key: String): Int? = m[key]?.let {
-        if (key == "Possession") Math.round(it * 100).toInt() else Math.round(it).toInt()
+
+    val list = mutableListOf<MatchStat>()
+    val posA = home["Possession"]
+    val posB = away["Possession"]
+    if (posA != null && posB != null && posA + posB > 0) {
+        val a = Math.round(posA / (posA + posB) * 100).toInt()
+        list += MatchStat("Posesión %", a, 100 - a)
     }
-    MATCH_STAT_KEYS.mapNotNull { (key, label) ->
-        val a = v(home, key) ?: return@mapNotNull null
-        val b = v(away, key) ?: return@mapNotNull null
-        MatchStat(label, a, b)
+    fun add(label: String, key: String) {
+        val a = home[key] ?: return
+        val b = away[key] ?: return
+        list += MatchStat(label, Math.round(a).toInt(), Math.round(b).toInt())
     }
+    add("Remates", "AttemptAtGoal")
+    add("Remates al arco", "AttemptAtGoalOnTarget")
+    add("Pases", "Passes")
+    val pcA = home["PassesCompleted"]; val ptA = home["Passes"]
+    val pcB = away["PassesCompleted"]; val ptB = away["Passes"]
+    if (pcA != null && pcB != null && ptA != null && ptB != null && ptA > 0 && ptB > 0) {
+        list += MatchStat(
+            "Precisión de pases %",
+            Math.round(pcA / ptA * 100).toInt(),
+            Math.round(pcB / ptB * 100).toInt()
+        )
+    }
+    add("Córners", "Corners")
+    add("Faltas", "FoulsFor")
+    add("Posición adelantada", "Offsides")
+    add("Amarillas", "YellowCards")
+    add("Rojas", "RedCards")
+    list
 }.getOrDefault(emptyList())
 
 fun parseFifaLive(json: String): List<FifaLiveInfo> =
