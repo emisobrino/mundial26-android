@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -63,22 +62,7 @@ fun LiveMatchCard(
                     style = MaterialTheme.typography.labelLarge,
                     color = Color.White.copy(alpha = 0.5f)
                 )
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(20.dp))
-                        .background(MundialTheme.colors.live)
-                        .padding(horizontal = 8.dp, vertical = 4.dp)
-                ) {
-                    LivePulseDot(size = 6.dp)
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = "${match.minute}'",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = Color.White,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
+                LiveMinutePill(minute = match.minute)
             }
 
             Spacer(modifier = Modifier.height(16.dp))

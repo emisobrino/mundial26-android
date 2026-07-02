@@ -49,7 +49,7 @@ import com.mundial26.app.domain.model.MatchEvent
 import com.mundial26.app.domain.model.MatchStat
 import com.mundial26.app.domain.model.MatchStatus
 import com.mundial26.app.ui.components.FlagAvatar
-import com.mundial26.app.ui.components.LivePulseDot
+import com.mundial26.app.ui.components.LiveMinutePill
 import com.mundial26.app.ui.theme.MundialTheme
 import com.mundial26.app.ui.theme.ScoreboardBig
 
@@ -200,22 +200,7 @@ private fun MatchHero(match: Match, modifier: Modifier = Modifier) {
                 }
                 if (match.status == MatchStatus.LIVE && match.minute != null) {
                     Spacer(modifier = Modifier.height(8.dp))
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(20.dp))
-                            .background(MundialTheme.colors.live)
-                            .padding(horizontal = 10.dp, vertical = 4.dp)
-                    ) {
-                        LivePulseDot(size = 6.dp)
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = "${match.minute}'",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
+                    LiveMinutePill(minute = match.minute)
                 }
             }
 
