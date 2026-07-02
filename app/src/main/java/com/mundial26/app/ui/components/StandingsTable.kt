@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import com.mundial26.app.data.mock.MockData
 import com.mundial26.app.domain.model.Group
 import com.mundial26.app.domain.model.GroupRow
+import com.mundial26.app.domain.model.Nations
 import com.mundial26.app.ui.theme.MundialTheme
 
 /**
@@ -160,11 +161,7 @@ private fun DataRow(
 }
 
 private fun teamLabel(row: GroupRow, compact: Boolean): String =
-    if (compact) {
-        MockData.teams.find { it.code == row.code }?.name ?: row.code
-    } else {
-        row.code
-    }
+    if (compact) Nations.name(row.code) else row.code
 
 private fun signed(value: Int): String = when {
     value > 0 -> "+$value"
