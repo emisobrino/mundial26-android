@@ -40,6 +40,14 @@ fun MundialApp(container: AppContainer) {
     val navController = rememberNavController()
     val currentRoute by navController.currentBackStackEntryAsState()
     val currentRouteStr = currentRoute?.destination?.route
+    val uriHandler = androidx.compose.ui.platform.LocalUriHandler.current
+
+    // Las noticias reales del RSS (id = URL) abren directo en el navegador del teléfono;
+    // las de muestra (sin URL) siguen yendo al detalle interno.
+    val openNews: (String) -> Unit = { id ->
+        if (id.startsWith("http")) runCatching { uriHandler.openUri(id) }
+        else navController.navigate(DetailRoutes.newsDetail(id))
+    }
 
     Scaffold(
         bottomBar = {
@@ -82,7 +90,7 @@ fun MundialApp(container: AppContainer) {
                         }
                     },
                     onMatchClick = { id -> navController.navigate(DetailRoutes.matchDetail(id)) },
-                    onNewsClick = { id -> navController.navigate(DetailRoutes.newsDetail(id)) },
+                    onNewsClick = openNews,
                     onTeamClick = { id -> navController.navigate(DetailRoutes.teamDetail(id)) },
                     onLeadersClick = { navController.navigate(DetailRoutes.LEADERS) }
                 )
@@ -105,7 +113,7 @@ fun MundialApp(container: AppContainer) {
                 val vm: NewsViewModel = viewModel(factory = NewsViewModel.Factory(container.newsRepository))
                 NewsScreen(
                     viewModel = vm,
-                    onNewsClick = { id -> navController.navigate(DetailRoutes.newsDetail(id)) }
+                    onNewsClick = openNews
                 )
             }
             composable(

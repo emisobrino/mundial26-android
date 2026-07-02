@@ -7,6 +7,7 @@ import com.mundial26.app.data.local.db.toDomain
 import com.mundial26.app.data.mock.MockData
 import com.mundial26.app.data.remote.fifa.FifaLiveInfo
 import com.mundial26.app.data.remote.fifa.FifaMatchSource
+import com.mundial26.app.data.remote.fifa.daysAround
 import com.mundial26.app.data.remote.openfootball.OpenFootballApi
 import com.mundial26.app.data.remote.openfootball.findEventsFor
 import com.mundial26.app.data.sync.SyncManager
@@ -58,7 +59,7 @@ class DefaultMatchRepository(
         val events = runCatching {
             fifa.findMatch(m.day, m.teamA, m.teamB)?.let { fifa.events(it) }.orEmpty()
         }.getOrDefault(emptyList()).ifEmpty {
-            runCatching { of.worldCup().matches.findEventsFor(m.day ?: "", m.teamA, m.teamB) }.getOrDefault(emptyList())
+            runCatching { of.worldCup().matches.findEventsFor(daysAround(m.day), m.teamA, m.teamB) }.getOrDefault(emptyList())
         }
         // Sin fuente gratuita de stats por partido → estimación editorial (solo si ya se jugó).
         val stats = if (m.status != MatchStatus.UPCOMING && m.stats.isEmpty()) estimatedStats(m) else m.stats

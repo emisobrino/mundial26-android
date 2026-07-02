@@ -20,11 +20,18 @@ fun StandingEntity.toDomain() = GroupRow(code = tla, flag = tlaToIso(tla), pj = 
 fun List<StandingEntity>.toGroups(): List<Group> =
     groupBy { it.grp }.map { (g, rows) -> Group(g.replace("Group ", "Grupo "), rows.sortedBy { it.position }.map { it.toDomain() }) }
 
-fun MatchEntity.toDomain(nowEpochMs: Long = System.currentTimeMillis()): Match {
+fun MatchEntity.toDomain(
+    nowEpochMs: Long = System.currentTimeMillis(),
+    zone: java.time.ZoneId = java.time.ZoneId.systemDefault()
+): Match {
     val st = statusOf(status)
+    // Hora y día en la zona horaria del dispositivo (la API da UTC).
+    val local = runCatching { java.time.Instant.parse(utcDate).atZone(zone) }.getOrNull()
     return Match(
         id = id, status = st, minute = deriveMinute(utcDate, st, nowEpochMs),
-        time = utcDate.takeIf { it.length >= 16 }?.substring(11, 16), day = utcDate.take(10),
+        time = local?.let { "%02d:%02d".format(it.hour, it.minute) }
+            ?: utcDate.takeIf { it.length >= 16 }?.substring(11, 16),
+        day = local?.toLocalDate()?.toString() ?: utcDate.take(10),
         group = prettyGroup(stage, grp), stadium = "",
         teamA = homeTla, teamB = awayTla, flagA = tlaToIso(homeTla), flagB = tlaToIso(awayTla),
         scoreA = scoreHome, scoreB = scoreAway
