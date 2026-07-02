@@ -9,5 +9,5 @@ fun OfMatch.toEvents(): List<MatchEvent> =
     (goals1.map { MatchEvent(it.minute ?: 0, EventKind.GOAL, 'A', fixEncoding(it.name)) } +
      goals2.map { MatchEvent(it.minute ?: 0, EventKind.GOAL, 'B', fixEncoding(it.name)) }).sortedBy { it.min }
 
-fun List<OfMatch>.findEventsFor(day: String, teamAName: String, teamBName: String): List<MatchEvent> =
-    firstOrNull { it.date == day && (it.team1.contains(teamAName, true) || teamAName.contains(it.team1, true)) && (it.team2.contains(teamBName, true) || teamBName.contains(it.team2, true)) }?.toEvents() ?: emptyList()
+fun List<OfMatch>.findEventsFor(days: Set<String>, teamAName: String, teamBName: String): List<MatchEvent> =
+    firstOrNull { it.date in days && (it.team1.contains(teamAName, true) || teamAName.contains(it.team1, true)) && (it.team2.contains(teamBName, true) || teamBName.contains(it.team2, true)) }?.toEvents() ?: emptyList()

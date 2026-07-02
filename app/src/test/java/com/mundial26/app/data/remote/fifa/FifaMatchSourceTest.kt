@@ -6,6 +6,14 @@ import org.junit.Test
 
 class FifaMatchSourceTest {
 
+    // ---------- daysAround ----------
+
+    @Test fun dias_vecinos_para_tolerancia_local_utc() {
+        assertEquals(setOf("2026-07-01", "2026-07-02", "2026-07-03"), daysAround("2026-07-02"))
+        assertEquals(setOf("raro"), daysAround("raro"))
+        assertTrue(daysAround(null).isEmpty())
+    }
+
     // ---------- parseFifaMinute ----------
 
     @Test fun minuto_simple_y_con_descuento() {

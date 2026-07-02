@@ -36,6 +36,15 @@ data class FifaMatchRef(
 /** Estado en vivo de un partido según FIFA. */
 data class FifaLiveInfo(val homeTla: String, val awayTla: String, val minute: Int?, val scoreHome: Int?, val scoreAway: Int?)
 
+/**
+ * Día dado ± 1 (para emparejar un día LOCAL del dispositivo con el día UTC de las
+ * fuentes: cerca de medianoche pueden diferir). "2026-07-02" → {01, 02, 03}.
+ */
+fun daysAround(day: String?): Set<String> {
+    val d = runCatching { java.time.LocalDate.parse(day) }.getOrNull() ?: return setOfNotNull(day)
+    return setOf(d.minusDays(1).toString(), d.toString(), d.plusDays(1).toString())
+}
+
 /** "9'" → 9; "90'+2'" → 92; null/raro → null. */
 fun parseFifaMinute(raw: String?): Int? {
     if (raw.isNullOrBlank()) return null
@@ -140,11 +149,13 @@ class FifaMatchSource(private val client: OkHttpClient = OkHttpClient()) {
         parsed
     }
 
-    /** Busca el partido FIFA correspondiente por día UTC + TLAs (en cualquier orden local/visitante). */
-    suspend fun findMatch(day: String?, tlaA: String, tlaB: String): FifaMatchRef? =
-        calendar().firstOrNull {
-            it.day == day && ((it.homeTla == tlaA && it.awayTla == tlaB) || (it.homeTla == tlaB && it.awayTla == tlaA))
+    /** Busca el partido FIFA por día (±1, por diferencia local↔UTC) + TLAs en cualquier orden. */
+    suspend fun findMatch(day: String?, tlaA: String, tlaB: String): FifaMatchRef? {
+        val days = daysAround(day)
+        return calendar().firstOrNull {
+            it.day in days && ((it.homeTla == tlaA && it.awayTla == tlaB) || (it.homeTla == tlaB && it.awayTla == tlaA))
         }
+    }
 
     /** Eventos reales (goles, tarjetas, cambios) del partido; vacío si falla. */
     suspend fun events(ref: FifaMatchRef): List<MatchEvent> = withContext(Dispatchers.IO) {
