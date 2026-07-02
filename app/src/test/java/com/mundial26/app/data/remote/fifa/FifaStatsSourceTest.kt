@@ -20,6 +20,11 @@ class FifaStatsSourceTest {
         assertEquals(listOf("111111" to 5, "430605" to 4, "444444" to 3), top)
     }
 
+    @Test fun extrae_top_goleadores_con_stat_generica() {
+        val top = parseTopStat(playersJson, "Goals", 10)
+        assertEquals(listOf("222222" to 3, "111111" to 2, "430605" to 1), top)
+    }
+
     @Test fun respeta_el_limite_y_excluye_cero_o_sin_stat() {
         val top = parseTopAssists(playersJson, 2)
         assertEquals(2, top.size)

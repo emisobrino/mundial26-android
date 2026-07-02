@@ -68,6 +68,9 @@ class DefaultTeamRepository(
 
     override suspend fun topScorers(): List<Leader> {
         fresh()
+        // Prioridad: FIFA oficial (misma fuente que el panel de Google); DB de football-data como fallback.
+        val fifaTop = runCatching { fifa.topScorers(10) }.getOrDefault(emptyList())
+        if (fifaTop.isNotEmpty()) return fifaTop
         return playerDao.topScorers(10).mapIndexed { i, p -> p.toLeader(i + 1, p.goals) }.ifEmpty { MockData.topScorers }
     }
 
