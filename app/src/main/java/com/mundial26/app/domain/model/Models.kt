@@ -48,6 +48,7 @@ data class Match(
     val scoreA: Int?, val scoreB: Int?,        // marcador real (120' si hubo alargue)
     val penA: Int? = null, val penB: Int? = null,   // definición por penales
     val stats: List<MatchStat> = emptyList(),
+    val statsEstimated: Boolean = false,            // true = estimación editorial (sin fuente oficial)
     val events: List<MatchEvent> = emptyList()
 )
 

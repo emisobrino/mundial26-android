@@ -146,7 +146,7 @@ private fun MatchDetailContent(match: Match, modifier: Modifier = Modifier) {
     ) {
         item { MatchHero(match = match) }
         if (match.stats.isNotEmpty()) {
-            item { StatsSection(stats = match.stats) }
+            item { StatsSection(stats = match.stats, estimated = match.statsEstimated) }
         }
         if (match.events.isNotEmpty()) {
             item { EventsSection(match = match) }
@@ -259,7 +259,7 @@ private fun TeamColumn(iso: String, code: String, modifier: Modifier = Modifier)
 }
 
 @Composable
-private fun StatsSection(stats: List<MatchStat>, modifier: Modifier = Modifier) {
+private fun StatsSection(stats: List<MatchStat>, estimated: Boolean = false, modifier: Modifier = Modifier) {
     Column(modifier = modifier.fillMaxWidth()) {
         Text(
             text = "ESTADÍSTICAS",
@@ -283,7 +283,7 @@ private fun StatsSection(stats: List<MatchStat>, modifier: Modifier = Modifier) 
         }
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = "Estimación editorial · no oficial",
+            text = if (estimated) "Estimación editorial · no oficial" else "Datos oficiales FIFA",
             style = MaterialTheme.typography.labelSmall,
             color = MundialTheme.colors.textFaint
         )

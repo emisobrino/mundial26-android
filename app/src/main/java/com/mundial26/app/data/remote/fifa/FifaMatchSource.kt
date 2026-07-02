@@ -3,6 +3,7 @@ package com.mundial26.app.data.remote.fifa
 import com.mundial26.app.data.net.AppJson
 import com.mundial26.app.domain.model.EventKind
 import com.mundial26.app.domain.model.MatchEvent
+import com.mundial26.app.domain.model.MatchStat
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.jsonArray
@@ -34,7 +35,8 @@ data class FifaMatchRef(
     val scoreHome: Int?, val scoreAway: Int?,
     val matchNumber: Int? = null,
     val placeholderA: String = "", val placeholderB: String = "",   // "W83" = ganador del 83, "L97" = perdedor
-    val winnerTeamId: String? = null
+    val winnerTeamId: String? = null,
+    val idIfes: String = ""          // id interno del data hub (fdh-api) para stats del partido
 )
 
 /**
@@ -121,7 +123,8 @@ fun parseFifaCalendar(json: String): List<FifaMatchRef> =
                 scoreHome = str(home, "Score")?.toIntOrNull(), scoreAway = str(away, "Score")?.toIntOrNull(),
                 matchNumber = str(m, "MatchNumber")?.toIntOrNull(),
                 placeholderA = str(m, "PlaceHolderA") ?: "", placeholderB = str(m, "PlaceHolderB") ?: "",
-                winnerTeamId = str(m, "Winner")
+                winnerTeamId = str(m, "Winner"),
+                idIfes = str(side("Properties"), "IdIFES") ?: ""
             )
         }.getOrNull()
     } ?: emptyList()
@@ -146,6 +149,42 @@ fun parseFifaTimeline(json: String, homeTeamId: String): List<MatchEvent> =
             MatchEvent(min = min, kind = kind, side = side, player = extractEventPlayer(type, desc))
         }.getOrNull()
     } ?: emptyList()
+
+/** Stats oficiales que mostramos, en orden, con su etiqueta en español. */
+private val MATCH_STAT_KEYS = listOf(
+    "Possession" to "Posesión %",          // viene como fracción (0.57)
+    "AttemptAtGoal" to "Remates",
+    "AttemptAtGoalOnTarget" to "Remates al arco",
+    "Corners" to "Córners",
+    "FoulsFor" to "Faltas",
+    "Offsides" to "Fuera de juego",
+    "YellowCards" to "Amarillas"
+)
+
+/**
+ * Stats oficiales de un partido desde `fdh-api.../stats/match/{idIfes}/teams.json`:
+ * `{ "<idEquipo>": [["Possession",0.57,bool], ...], ... }`. El lado A es `homeTeamId`.
+ */
+fun parseFifaMatchStats(json: String, homeTeamId: String): List<MatchStat> = runCatching {
+    val obj = AppJson.parseToJsonElement(json).jsonObject
+    fun statsOf(id: String): Map<String, Double>? = obj[id]?.jsonArray?.mapNotNull { s ->
+        runCatching {
+            s.jsonArray[0].jsonPrimitive.content to (s.jsonArray[1].jsonPrimitive.content.toDoubleOrNull() ?: return@runCatching null)
+        }.getOrNull()
+    }?.toMap()
+
+    val home = statsOf(homeTeamId) ?: return@runCatching emptyList()
+    val awayId = obj.keys.firstOrNull { it != homeTeamId } ?: return@runCatching emptyList()
+    val away = statsOf(awayId) ?: return@runCatching emptyList()
+    fun v(m: Map<String, Double>, key: String): Int? = m[key]?.let {
+        if (key == "Possession") Math.round(it * 100).toInt() else Math.round(it).toInt()
+    }
+    MATCH_STAT_KEYS.mapNotNull { (key, label) ->
+        val a = v(home, key) ?: return@mapNotNull null
+        val b = v(away, key) ?: return@mapNotNull null
+        MatchStat(label, a, b)
+    }
+}.getOrDefault(emptyList())
 
 fun parseFifaLive(json: String): List<FifaLiveInfo> =
     AppJson.parseToJsonElement(json).jsonObject["Results"]?.jsonArray?.mapNotNull { el ->
@@ -216,6 +255,21 @@ class FifaMatchSource(private val client: OkHttpClient = OkHttpClient()) {
         }.getOrDefault(emptyList())
         if (events.isNotEmpty()) timelineCache[ref.idMatch] = System.currentTimeMillis() to events
         events
+    }
+
+    private val statsCache = mutableMapOf<String, Pair<Long, List<MatchStat>>>()
+    private val statsTtl = 60 * 1000L
+
+    /** Stats oficiales del partido (posesión, remates, córners…); vacío si aún no hay datos. Caché 60 s. */
+    suspend fun matchStats(ref: FifaMatchRef): List<MatchStat> = withContext(Dispatchers.IO) {
+        if (ref.idIfes.isBlank()) return@withContext emptyList()
+        statsCache[ref.idIfes]?.let { (at, s) -> if (System.currentTimeMillis() - at < statsTtl) return@withContext s }
+        val stats = runCatching {
+            get("https://fdh-api.fifa.com/v1/stats/match/${ref.idIfes}/teams.json")
+                ?.let { parseFifaMatchStats(it, ref.homeTeamId) }.orEmpty()
+        }.getOrDefault(emptyList())
+        if (stats.isNotEmpty()) statsCache[ref.idIfes] = System.currentTimeMillis() to stats
+        stats
     }
 
     private var liveCache: Pair<Long, List<FifaLiveInfo>>? = null

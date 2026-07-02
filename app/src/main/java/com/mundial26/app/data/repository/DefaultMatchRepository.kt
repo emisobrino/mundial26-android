@@ -82,14 +82,21 @@ class DefaultMatchRepository(
     }
     override suspend fun match(id: String): Match? {
         val m = allWithLive().firstOrNull { it.id == id } ?: return null
+        val ref = runCatching { fifa.findMatch(m.day, m.teamA, m.teamB) }.getOrNull()
         // Eventos: timeline oficial de FIFA (goles, tarjetas, cambios); openfootball como fallback.
-        val events = runCatching {
-            fifa.findMatch(m.day, m.teamA, m.teamB)?.let { fifa.events(it) }.orEmpty()
-        }.getOrDefault(emptyList()).ifEmpty {
+        val events = (ref?.let { runCatching { fifa.events(it) }.getOrDefault(emptyList()) } ?: emptyList()).ifEmpty {
             runCatching { of.worldCup().matches.findEventsFor(daysAround(m.day), m.teamA, m.teamB) }.getOrDefault(emptyList())
         }
-        // Sin fuente gratuita de stats por partido → estimación editorial (solo si ya se jugó).
-        val stats = if (m.status != MatchStatus.UPCOMING && m.stats.isEmpty()) estimatedStats(m) else m.stats
-        return m.copy(events = events, stats = stats)
+        // Stats: oficiales de FIFA (fdh); si no hay, estimación editorial (solo si ya se juega/jugó).
+        var fifaStats = ref?.let { runCatching { fifa.matchStats(it) }.getOrDefault(emptyList()) } ?: emptyList()
+        if (fifaStats.isNotEmpty() && ref != null && ref.homeTla != m.teamA) {
+            fifaStats = fifaStats.map { it.copy(a = it.b, b = it.a) }   // FIFA invierte local/visitante
+        }
+        val (stats, estimated) = when {
+            fifaStats.isNotEmpty() -> fifaStats to false
+            m.status != MatchStatus.UPCOMING && m.stats.isEmpty() -> estimatedStats(m) to true
+            else -> m.stats to m.statsEstimated
+        }
+        return m.copy(events = events, stats = stats, statsEstimated = estimated)
     }
 }
