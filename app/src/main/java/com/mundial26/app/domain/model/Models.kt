@@ -45,7 +45,8 @@ data class Match(
     val day: String?, val group: String, val stadium: String,
     val teamA: String, val teamB: String,      // códigos (ARG, MEX…)
     val flagA: String, val flagB: String,      // ISO-2
-    val scoreA: Int?, val scoreB: Int?,
+    val scoreA: Int?, val scoreB: Int?,        // marcador real (120' si hubo alargue)
+    val penA: Int? = null, val penB: Int? = null,   // definición por penales
     val stats: List<MatchStat> = emptyList(),
     val events: List<MatchEvent> = emptyList()
 )
@@ -55,7 +56,11 @@ data class GroupRow(val code: String, val flag: String, val pj: Int, val g: Int,
 }
 data class Group(val name: String, val rows: List<GroupRow>)
 
-data class BracketMatch(val a: String, val b: String, val flagA: String, val flagB: String, val sa: Int?, val sb: Int?, val done: Boolean)
+data class BracketMatch(
+    val a: String, val b: String, val flagA: String, val flagB: String,
+    val sa: Int?, val sb: Int?, val done: Boolean,
+    val pa: Int? = null, val pb: Int? = null   // penales, si definieron la llave
+)
 data class BracketRound(val round: String, val games: List<BracketMatch>)
 
 data class NewsItem(val id: String, val tag: String, val colorHex: Long, val time: String, val title: String, val summary: String, val body: List<String>)

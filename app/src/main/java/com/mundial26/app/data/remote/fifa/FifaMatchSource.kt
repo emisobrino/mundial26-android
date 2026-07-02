@@ -27,11 +27,37 @@ private const val UA = "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTM
 data class FifaMatchRef(
     val idMatch: String, val idStage: String,
     val day: String,                 // "2026-06-11" (UTC)
-    val homeTla: String, val awayTla: String,
+    val utcDate: String,             // "2026-06-11T19:00:00Z"
+    val homeTla: String, val awayTla: String,        // "" si el cruce aún no está definido
     val homeTeamId: String, val awayTeamId: String,
     val status: Int,                 // 0=finalizado, 3=en vivo, 1=próximo
-    val scoreHome: Int?, val scoreAway: Int?
+    val scoreHome: Int?, val scoreAway: Int?,
+    val matchNumber: Int? = null,
+    val placeholderA: String = "", val placeholderB: String = "",   // "W83" = ganador del 83, "L97" = perdedor
+    val winnerTeamId: String? = null
 )
+
+/**
+ * Resuelve un placeholder de cruce ("W83"/"L97") a un texto mostrable:
+ * - si el partido referido terminó → TLA del ganador/perdedor real;
+ * - si ya tiene equipos → "TLA1/TLA2" (posible cruce);
+ * - si tampoco están definidos → "Gan. 83" / "Perd. 97".
+ */
+fun resolveCross(placeholder: String, byNumber: Map<Int, FifaMatchRef>): String {
+    val m = Regex("([WL])(\\d+)").matchEntire(placeholder.trim()) ?: return placeholder
+    val wantWinner = m.groupValues[1] == "W"
+    val num = m.groupValues[2].toInt()
+    val target = byNumber[num] ?: return if (wantWinner) "Gan. $num" else "Perd. $num"
+    if (target.homeTla.isNotBlank() && target.awayTla.isNotBlank()) {
+        val winner = target.winnerTeamId
+        if (winner != null) {
+            val homeWon = winner == target.homeTeamId
+            return if (homeWon == wantWinner) target.homeTla else target.awayTla
+        }
+        return "${target.homeTla}/${target.awayTla}"
+    }
+    return if (wantWinner) "Gan. $num" else "Perd. $num"
+}
 
 /** Estado en vivo de un partido según FIFA. */
 data class FifaLiveInfo(val homeTla: String, val awayTla: String, val minute: Int?, val scoreHome: Int?, val scoreAway: Int?)
@@ -73,18 +99,23 @@ fun parseFifaCalendar(json: String): List<FifaMatchRef> =
         runCatching {
             val m = el.jsonObject
             fun side(key: String) = m[key]?.takeIf { it !is kotlinx.serialization.json.JsonNull }?.jsonObject
-            val home = side("Home") ?: return@runCatching null
-            val away = side("Away") ?: return@runCatching null
-            fun str(o: Map<String, kotlinx.serialization.json.JsonElement>, k: String) =
-                o[k]?.takeIf { it !is kotlinx.serialization.json.JsonNull }?.jsonPrimitive?.content
+            // Home/Away pueden venir null en cruces de eliminatorias aún no definidos.
+            val home = side("Home")
+            val away = side("Away")
+            fun str(o: Map<String, kotlinx.serialization.json.JsonElement>?, k: String) =
+                o?.get(k)?.takeIf { it !is kotlinx.serialization.json.JsonNull }?.jsonPrimitive?.content
+            val date = str(m, "Date") ?: ""
             FifaMatchRef(
                 idMatch = str(m, "IdMatch") ?: return@runCatching null,
                 idStage = str(m, "IdStage") ?: "",
-                day = (str(m, "Date") ?: "").take(10),
+                day = date.take(10), utcDate = date,
                 homeTla = str(home, "Abbreviation") ?: "", awayTla = str(away, "Abbreviation") ?: "",
                 homeTeamId = str(home, "IdTeam") ?: "", awayTeamId = str(away, "IdTeam") ?: "",
                 status = str(m, "MatchStatus")?.toIntOrNull() ?: 1,
-                scoreHome = str(home, "Score")?.toIntOrNull(), scoreAway = str(away, "Score")?.toIntOrNull()
+                scoreHome = str(home, "Score")?.toIntOrNull(), scoreAway = str(away, "Score")?.toIntOrNull(),
+                matchNumber = str(m, "MatchNumber")?.toIntOrNull(),
+                placeholderA = str(m, "PlaceHolderA") ?: "", placeholderB = str(m, "PlaceHolderB") ?: "",
+                winnerTeamId = str(m, "Winner")
             )
         }.getOrNull()
     } ?: emptyList()
@@ -151,10 +182,20 @@ class FifaMatchSource(private val client: OkHttpClient = OkHttpClient()) {
 
     /** Busca el partido FIFA por día (±1, por diferencia local↔UTC) + TLAs en cualquier orden. */
     suspend fun findMatch(day: String?, tlaA: String, tlaB: String): FifaMatchRef? {
+        if (tlaA.isBlank() || tlaB.isBlank()) return null
         val days = daysAround(day)
         return calendar().firstOrNull {
             it.day in days && ((it.homeTla == tlaA && it.awayTla == tlaB) || (it.homeTla == tlaB && it.awayTla == tlaA))
         }
+    }
+
+    /** Cruce (definido o posible) para un partido sin equipos, por fecha-hora UTC exacta. */
+    suspend fun crossesFor(utcDate: String): Pair<String, String>? {
+        val cal = calendar()
+        val entry = cal.firstOrNull { it.utcDate == utcDate && it.homeTla.isBlank() } ?: return null
+        if (entry.placeholderA.isBlank() && entry.placeholderB.isBlank()) return null
+        val byNumber = cal.mapNotNull { r -> r.matchNumber?.let { it to r } }.toMap()
+        return resolveCross(entry.placeholderA, byNumber) to resolveCross(entry.placeholderB, byNumber)
     }
 
     /** Eventos reales (goles, tarjetas, cambios) del partido; vacío si falla. */

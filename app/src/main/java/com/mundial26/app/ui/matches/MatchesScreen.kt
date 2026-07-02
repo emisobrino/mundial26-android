@@ -237,10 +237,13 @@ private fun BracketCard(game: BracketMatch, modifier: Modifier = Modifier) {
             .padding(12.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        val aWins = game.done && game.sa != null && game.sb != null && game.sa > game.sb
-        val bWins = game.done && game.sa != null && game.sb != null && game.sb > game.sa
-        BracketTeamRow(code = game.a, iso = game.flagA, score = game.sa, done = game.done, isWinner = aWins)
-        BracketTeamRow(code = game.b, iso = game.flagB, score = game.sb, done = game.done, isWinner = bWins)
+        // Con marcador igualado, la llave se define por penales.
+        val aWins = game.done && game.sa != null && game.sb != null &&
+            (game.sa > game.sb || (game.sa == game.sb && (game.pa ?: 0) > (game.pb ?: 0)))
+        val bWins = game.done && game.sa != null && game.sb != null &&
+            (game.sb > game.sa || (game.sa == game.sb && (game.pb ?: 0) > (game.pa ?: 0)))
+        BracketTeamRow(code = game.a, iso = game.flagA, score = game.sa, pen = game.pa, done = game.done, isWinner = aWins)
+        BracketTeamRow(code = game.b, iso = game.flagB, score = game.sb, pen = game.pb, done = game.done, isWinner = bWins)
     }
 }
 
@@ -249,6 +252,7 @@ private fun BracketTeamRow(
     code: String,
     iso: String,
     score: Int?,
+    pen: Int?,
     done: Boolean,
     isWinner: Boolean
 ) {
@@ -276,7 +280,7 @@ private fun BracketTeamRow(
         )
         if (done && score != null) {
             Text(
-                text = "$score",
+                text = "$score" + (pen?.let { " ($it)" } ?: ""),
                 style = MaterialTheme.typography.bodyLarge,
                 color = textColor,
                 fontWeight = weight

@@ -48,26 +48,54 @@ class FifaMatchSourceTest {
     private val calendarJson = """
         {"Results":[
           {"IdMatch":"400021443","IdStage":"289273","Date":"2026-06-11T19:00:00Z","MatchStatus":0,
+           "MatchNumber":74,"Winner":"43911",
            "Home":{"IdTeam":"43911","Score":2,"Abbreviation":"MEX"},
            "Away":{"IdTeam":"43883","Score":0,"Abbreviation":"RSA"}},
           {"IdMatch":"400021542","IdStage":"289291","Date":"2026-07-18T21:00:00Z","MatchStatus":1,
+           "MatchNumber":101,"PlaceHolderA":"W97","PlaceHolderB":"W98",
            "Home":null,"Away":null}
         ]}
     """.trimIndent()
 
-    @Test fun parsea_calendario_y_omite_partidos_sin_equipos() {
+    @Test fun parsea_calendario_incluyendo_cruces_sin_definir() {
         val refs = parseFifaCalendar(calendarJson)
-        assertEquals(1, refs.size)
+        assertEquals(2, refs.size)
         val r = refs[0]
         assertEquals("400021443", r.idMatch)
-        assertEquals("289273", r.idStage)
         assertEquals("2026-06-11", r.day)
+        assertEquals("2026-06-11T19:00:00Z", r.utcDate)
         assertEquals("MEX", r.homeTla)
-        assertEquals("RSA", r.awayTla)
-        assertEquals("43911", r.homeTeamId)
-        assertEquals(0, r.status)
+        assertEquals(74, r.matchNumber)
+        assertEquals("43911", r.winnerTeamId)
         assertEquals(2, r.scoreHome)
-        assertEquals(0, r.scoreAway)
+
+        val tbd = refs[1]
+        assertEquals("", tbd.homeTla)
+        assertEquals("W97", tbd.placeholderA)
+        assertEquals("W98", tbd.placeholderB)
+        assertEquals(101, tbd.matchNumber)
+    }
+
+    // ---------- resolveCross ----------
+
+    private fun ref(num: Int, home: String = "", away: String = "", homeId: String = "", awayId: String = "", winner: String? = null) =
+        FifaMatchRef("m$num", "s", "2026-07-06", "2026-07-06T19:00:00Z", home, away, homeId, awayId, 1, null, null, num, "", "", winner)
+
+    @Test fun cruce_resuelto_al_ganador_o_perdedor_real() {
+        val byNum = mapOf(83 to ref(83, "GER", "PAR", "43948", "43928", winner = "43928"))
+        assertEquals("PAR", resolveCross("W83", byNum))
+        assertEquals("GER", resolveCross("L83", byNum))
+    }
+
+    @Test fun cruce_posible_cuando_hay_equipos_sin_ganador() {
+        val byNum = mapOf(85 to ref(85, "ESP", "AUT", "1", "2"))
+        assertEquals("ESP/AUT", resolveCross("W85", byNum))
+    }
+
+    @Test fun cruce_sin_definir_muestra_ganador_del_numero() {
+        assertEquals("Gan. 93", resolveCross("W93", emptyMap()))
+        assertEquals("Perd. 97", resolveCross("L97", mapOf(97 to ref(97))))
+        assertEquals("raro", resolveCross("raro", emptyMap()))
     }
 
     // ---------- parseFifaTimeline ----------
