@@ -19,6 +19,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowDownward
+import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.outlined.SportsSoccer
 import androidx.compose.material.icons.outlined.SwapHoriz
 import androidx.compose.material3.Button
@@ -400,29 +402,79 @@ private fun EventContent(event: MatchEvent, isSideA: Boolean, modifier: Modifier
             color = MundialTheme.colors.textTertiary
         )
     }
-    val icon: @Composable () -> Unit = { EventIcon(kind = event.kind) }
-    val playerLabel: @Composable () -> Unit = {
-        Text(
-            text = event.player,
-            style = MaterialTheme.typography.bodyLarge,
-            color = MundialTheme.colors.textPrimary,
-            textAlign = if (isSideA) TextAlign.Start else TextAlign.End
-        )
+    // Cambio: dos líneas con flecha verde (entra) y roja (sale).
+    val subParts = if (event.kind == EventKind.SUB) event.player.split(" ⇄ ") else null
+    val content: @Composable () -> Unit = if (subParts != null && subParts.size == 2) {
+        { SubPlayers(inName = subParts[0], outName = subParts[1], isSideA = isSideA) }
+    } else {
+        {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (isSideA) {
+                    EventIcon(kind = event.kind)
+                    Spacer(modifier = Modifier.width(8.dp))
+                }
+                Text(
+                    text = event.player,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MundialTheme.colors.textPrimary,
+                    textAlign = if (isSideA) TextAlign.Start else TextAlign.End
+                )
+                if (!isSideA) {
+                    Spacer(modifier = Modifier.width(8.dp))
+                    EventIcon(kind = event.kind)
+                }
+            }
+        }
     }
 
     Row(modifier = modifier, verticalAlignment = Alignment.CenterVertically) {
         if (isSideA) {
             minuteLabel()
             Spacer(modifier = Modifier.width(8.dp))
-            icon()
-            Spacer(modifier = Modifier.width(8.dp))
-            playerLabel()
+            content()
         } else {
-            playerLabel()
-            Spacer(modifier = Modifier.width(8.dp))
-            icon()
+            content()
             Spacer(modifier = Modifier.width(8.dp))
             minuteLabel()
+        }
+    }
+}
+
+/** Sustitución: el que entra con flecha verde y el que sale con flecha roja. */
+@Composable
+private fun SubPlayers(inName: String, outName: String, isSideA: Boolean, modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier,
+        horizontalAlignment = if (isSideA) Alignment.Start else Alignment.End,
+        verticalArrangement = Arrangement.spacedBy(2.dp)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                imageVector = Icons.Filled.ArrowUpward,
+                contentDescription = "Entra",
+                tint = MundialTheme.colors.win,
+                modifier = Modifier.size(14.dp)
+            )
+            Spacer(modifier = Modifier.width(4.dp))
+            Text(
+                text = inName,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MundialTheme.colors.textPrimary
+            )
+        }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                imageVector = Icons.Filled.ArrowDownward,
+                contentDescription = "Sale",
+                tint = MundialTheme.colors.live,
+                modifier = Modifier.size(14.dp)
+            )
+            Spacer(modifier = Modifier.width(4.dp))
+            Text(
+                text = outName,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MundialTheme.colors.textSecondary
+            )
         }
     }
 }
