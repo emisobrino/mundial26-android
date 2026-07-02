@@ -50,6 +50,14 @@ class MatchesViewModel(
 
     init {
         load()
+        // Con partidos en juego, refresca en silencio cada 60 s (minuto/marcador en vivo).
+        viewModelScope.launch {
+            while (true) {
+                kotlinx.coroutines.delay(60_000)
+                val current = _uiState.value
+                if (current is MatchesUiState.Success && current.live.isNotEmpty()) loadData(silent = true)
+            }
+        }
     }
 
     /** Reintenta la carga de datos tras un error. */
@@ -81,7 +89,7 @@ class MatchesViewModel(
         viewModelScope.launch { loadData() }
     }
 
-    private suspend fun loadData() {
+    private suspend fun loadData(silent: Boolean = false) {
         try {
             val resultsAndUpcoming = matchRepository.resultsAndUpcoming()
                 _uiState.value = MatchesUiState.Success(
@@ -96,7 +104,8 @@ class MatchesViewModel(
                     bracket = matchRepository.bracket()
                 )
         } catch (e: Exception) {
-            _uiState.value = MatchesUiState.Error(e.message ?: "Error al cargar Partidos")
+            // En un refresh silencioso de fondo, un fallo transitorio no debe tapar el contenido.
+            if (!silent) _uiState.value = MatchesUiState.Error(e.message ?: "Error al cargar Partidos")
         }
     }
 

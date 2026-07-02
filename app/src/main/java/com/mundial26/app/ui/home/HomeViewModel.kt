@@ -53,6 +53,14 @@ class HomeViewModel(
 
     init {
         load()
+        // Con partidos en juego, refresca en silencio cada 60 s (minuto/marcador en vivo).
+        viewModelScope.launch {
+            while (true) {
+                kotlinx.coroutines.delay(60_000)
+                val current = _uiState.value
+                if (current is HomeUiState.Success && current.live.isNotEmpty()) loadData(silent = true)
+            }
+        }
     }
 
     /** Reintenta la carga de datos tras un error. */
@@ -82,7 +90,7 @@ class HomeViewModel(
         viewModelScope.launch { loadData() }
     }
 
-    private suspend fun loadData() {
+    private suspend fun loadData(silent: Boolean = false) {
         try {
             val groups = teamRepository.groups()
                 // Resultados recientes primero (más nuevos arriba), luego los próximos por jugarse.
@@ -103,7 +111,8 @@ class HomeViewModel(
                     news = newsRepository.news().take(4)
                 )
         } catch (e: Exception) {
-            _uiState.value = HomeUiState.Error(e.message ?: "Error al cargar Inicio")
+            // En un refresh silencioso de fondo, un fallo transitorio no debe tapar el contenido.
+            if (!silent) _uiState.value = HomeUiState.Error(e.message ?: "Error al cargar Inicio")
         }
     }
 

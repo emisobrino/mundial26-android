@@ -144,6 +144,15 @@ private fun MatchesContent(
     }
 }
 
+private val DIAS = arrayOf("Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo")
+private val MESES = arrayOf("enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre")
+
+/** "2026-07-02" → "Jueves 2 de julio"; si no parsea, devuelve el texto original. */
+private fun prettyDay(day: String): String = runCatching {
+    val d = java.time.LocalDate.parse(day)
+    "${DIAS[d.dayOfWeek.value - 1]} ${d.dayOfMonth} de ${MESES[d.monthValue - 1]}"
+}.getOrDefault(day)
+
 @Composable
 private fun SectionLabel(text: String, modifier: Modifier = Modifier) {
     Text(
@@ -198,7 +207,7 @@ private fun CalendarContent(
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         state.byDay.forEach { (day, matches) ->
-            item(key = "day-$day") { SectionLabel(text = day, modifier = Modifier.padding(top = 6.dp)) }
+            item(key = "day-$day") { SectionLabel(text = prettyDay(day), modifier = Modifier.padding(top = 6.dp)) }
             items(matches, key = { "day-$day-${it.id}" }) { match ->
                 MatchRow(match = match, useFullNames = true, onClick = { onMatchClick(match.id) })
             }

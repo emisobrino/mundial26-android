@@ -5,7 +5,9 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.mundial26.app.domain.model.Match
+import com.mundial26.app.domain.model.MatchStatus
 import com.mundial26.app.domain.repository.MatchRepository
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -25,7 +27,21 @@ class MatchDetailViewModel(
     private val _uiState = MutableStateFlow<MatchDetailUiState>(MatchDetailUiState.Loading)
     val uiState: StateFlow<MatchDetailUiState> = _uiState.asStateFlow()
 
-    init { load() }
+    init {
+        load()
+        // Partido en juego: refresca en silencio cada 60 s (minuto, marcador, stats y eventos).
+        viewModelScope.launch {
+            while (true) {
+                delay(60_000)
+                val current = _uiState.value
+                if (current is MatchDetailUiState.Success && current.match.status == MatchStatus.LIVE) {
+                    runCatching { matchRepository.match(matchId) }.getOrNull()?.let {
+                        _uiState.value = MatchDetailUiState.Success(it)
+                    }
+                }
+            }
+        }
+    }
 
     fun retry() = load()
 

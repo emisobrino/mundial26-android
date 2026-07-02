@@ -7,6 +7,7 @@ import com.mundial26.app.domain.model.*
 
 private fun prettyGroup(stage: String, grp: String): String = when {
     grp.isNotBlank() -> grp.replace("GROUP_", "Grupo ").replace("Group ", "Grupo ")
+    stage == "LAST_32" -> "16avos"
     stage == "LAST_16" -> "Octavos"
     stage == "QUARTER_FINALS" -> "Cuartos"
     stage == "SEMI_FINALS" -> "Semifinal"
