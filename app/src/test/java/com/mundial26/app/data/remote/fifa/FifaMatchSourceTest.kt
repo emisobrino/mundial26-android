@@ -98,6 +98,43 @@ class FifaMatchSourceTest {
         assertEquals("raro", resolveCross("raro", emptyMap()))
     }
 
+    private fun tbdRef(num: Int, phA: String, phB: String) =
+        FifaMatchRef("m$num", "s", "2026-07-10", "2026-07-10T19:00:00Z", "", "", "", "", 1, null, null, num, phA, phB, null)
+
+    @Test fun cruce_recursivo_junta_los_posibles_paises() {
+        // El 97 (cuartos) refiere al 93 (octavos TBD) que refiere a 83/84 ya jugados.
+        val byNum = mapOf(
+            83 to ref(83, "GER", "PAR", "1", "2", winner = "2"),   // ganó PAR
+            84 to ref(84, "NED", "MAR", "3", "4", winner = "4"),   // ganó MAR
+            93 to tbdRef(93, "W83", "W84"),
+            94 to ref(94, "USA", "BEL", "5", "6"),                 // con equipos, sin jugar
+            97 to tbdRef(97, "W93", "W94")
+        )
+        assertEquals("PAR/MAR", resolveCross("W93", byNum))
+        assertEquals("PAR/MAR/USA/BEL", resolveCross("W97", byNum))
+    }
+
+    @Test fun cruce_con_demasiados_candidatos_cae_al_numero() {
+        // Semifinal cuyo arbol junta más de 4 posibles → "Gan. 101".
+        val byNum = mapOf(
+            93 to ref(93, "AAA", "BBB", "1", "2"),
+            94 to ref(94, "CCC", "DDD", "3", "4"),
+            95 to ref(95, "EEE", "FFF", "5", "6"),
+            96 to ref(96, "GGG", "HHH", "7", "8"),
+            99 to tbdRef(99, "W93", "W94"),
+            100 to tbdRef(100, "W95", "W96"),
+            101 to tbdRef(101, "W99", "W100")
+        )
+        assertEquals("AAA/BBB/CCC/DDD", resolveCross("W99", byNum))
+        assertEquals("Gan. 101", resolveCross("W101", byNum))
+    }
+
+    @Test fun ru_del_tercer_puesto_es_perdedor() {
+        val byNum = mapOf(101 to ref(101, "ESP", "BRA", "1", "2", winner = "1"))
+        assertEquals("BRA", resolveCross("RU101", byNum))
+        assertEquals("Perd. 101", resolveCross("RU101", emptyMap()))
+    }
+
     // ---------- parseFifaTimeline ----------
 
     private val timelineJson = """

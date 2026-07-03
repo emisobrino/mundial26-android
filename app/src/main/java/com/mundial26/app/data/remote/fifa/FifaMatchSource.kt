@@ -39,26 +39,48 @@ data class FifaMatchRef(
     val idIfes: String = ""          // id interno del data hub (fdh-api) para stats del partido
 )
 
+/** "W83" = ganador del 83; "L97"/"RU101" = perdedor (FIFA usa RU en el tercer puesto). */
+private val CROSS_RX = Regex("(W|L|RU)(\\d+)")
+
 /**
- * Resuelve un placeholder de cruce ("W83"/"L97") a un texto mostrable:
- * - si el partido referido terminó → TLA del ganador/perdedor real;
- * - si ya tiene equipos → "TLA1/TLA2" (posible cruce);
- * - si tampoco están definidos → "Gan. 83" / "Perd. 97".
+ * Resuelve un placeholder de cruce a un texto mostrable:
+ * - partido referido terminado → TLA del ganador/perdedor real;
+ * - con equipos pero sin jugar → "TLA1/TLA2";
+ * - sin equipos → sigue la cadena de placeholders (recursivo) y muestra los
+ *   posibles países ("PAR/NOR/USA/BEL"); con más de 4 candidatos, "Gan. N"/"Perd. N".
  */
 fun resolveCross(placeholder: String, byNumber: Map<Int, FifaMatchRef>): String {
-    val m = Regex("([WL])(\\d+)").matchEntire(placeholder.trim()) ?: return placeholder
+    val m = CROSS_RX.matchEntire(placeholder.trim()) ?: return placeholder
     val wantWinner = m.groupValues[1] == "W"
     val num = m.groupValues[2].toInt()
-    val target = byNumber[num] ?: return if (wantWinner) "Gan. $num" else "Perd. $num"
-    if (target.homeTla.isNotBlank() && target.awayTla.isNotBlank()) {
-        val winner = target.winnerTeamId
+    val candidates = crossCandidates(num, wantWinner, byNumber, depth = 0)?.distinct()
+    return if (candidates != null && candidates.isNotEmpty() && candidates.size <= 4) {
+        candidates.joinToString("/")
+    } else if (wantWinner) "Gan. $num" else "Perd. $num"
+}
+
+/** Posibles TLAs que pueden salir del partido `num` (null = imposible de determinar). */
+private fun crossCandidates(num: Int, wantWinner: Boolean, byNumber: Map<Int, FifaMatchRef>, depth: Int): List<String>? {
+    val t = byNumber[num] ?: return null
+    if (t.homeTla.isNotBlank() && t.awayTla.isNotBlank()) {
+        val winner = t.winnerTeamId
         if (winner != null) {
-            val homeWon = winner == target.homeTeamId
-            return if (homeWon == wantWinner) target.homeTla else target.awayTla
+            val homeWon = winner == t.homeTeamId
+            return listOf(if (homeWon == wantWinner) t.homeTla else t.awayTla)
         }
-        return "${target.homeTla}/${target.awayTla}"
+        return listOf(t.homeTla, t.awayTla)
     }
-    return if (wantWinner) "Gan. $num" else "Perd. $num"
+    if (depth >= 2) return null
+    // El partido referido tampoco está definido: unir los candidatos de sus propios cruces
+    // (el ganador o perdedor puede ser cualquiera de los que lleguen).
+    val a = subCandidates(t.placeholderA, byNumber, depth + 1) ?: return null
+    val b = subCandidates(t.placeholderB, byNumber, depth + 1) ?: return null
+    return a + b
+}
+
+private fun subCandidates(placeholder: String, byNumber: Map<Int, FifaMatchRef>, depth: Int): List<String>? {
+    val m = CROSS_RX.matchEntire(placeholder.trim()) ?: return null
+    return crossCandidates(m.groupValues[2].toInt(), m.groupValues[1] == "W", byNumber, depth)
 }
 
 /** Estado en vivo de un partido según FIFA. El feed /live incluye también recién terminados y por empezar. */
