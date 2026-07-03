@@ -6,6 +6,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.mundial26.app.data.net.tlaToIso
 import com.mundial26.app.data.remote.fifa.FifaStatsSource
+import com.mundial26.app.data.remote.sportsdb.SportsDbSource
 import com.mundial26.app.domain.repository.TeamRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -51,7 +52,8 @@ private sealed interface Source {
 class PlayerDetailViewModel private constructor(
     private val teamRepository: TeamRepository,
     private val source: Source,
-    private val fifa: FifaStatsSource = FifaStatsSource()
+    private val fifa: FifaStatsSource = FifaStatsSource(),
+    private val sportsDb: SportsDbSource = SportsDbSource()
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<PlayerDetailUiState>(PlayerDetailUiState.Loading)
@@ -91,11 +93,12 @@ class PlayerDetailViewModel private constructor(
         val team = teamRepository.team(p.teamCode)
         // Perfil FIFA por nombre+selección: caps, goles internacionales, altura, peso, pie.
         val profile = runCatching { fifa.playerProfile(p.name, p.teamCode) }.getOrNull()
-        // Club actual y dorsal desde football-data /persons. Durante el Mundial, para
-        // algunos jugadores currentTeam es la propia selección → en ese caso se oculta.
+        // Club y dorsal desde football-data /persons. Durante el Mundial, para algunos
+        // jugadores currentTeam es la propia selección → completar con TheSportsDB.
         val clubInfo = runCatching { teamRepository.playerClub(playerId) }.getOrNull()
         val teamName = team?.name ?: p.teamCode
-        val club = clubInfo?.club?.takeIf { it.isNotBlank() && !it.equals(teamName, true) }.orEmpty()
+        val club = clubInfo?.club?.takeIf { it.isNotBlank() && !it.equals(teamName, true) }
+            ?: runCatching { sportsDb.clubOf(p.name) }.getOrNull().orEmpty()
         return PlayerDetailUiState.Success(
             number = clubInfo?.shirtNumber ?: 0, name = p.name, position = p.position, note = "",
             teamName = teamName, teamFlag = team?.flag ?: tlaToIso(p.teamCode),
