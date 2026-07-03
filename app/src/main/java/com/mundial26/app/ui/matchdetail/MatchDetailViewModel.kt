@@ -6,7 +6,9 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.mundial26.app.domain.model.Match
 import com.mundial26.app.domain.model.MatchStatus
+import com.mundial26.app.domain.model.Star
 import com.mundial26.app.domain.repository.MatchRepository
+import com.mundial26.app.domain.repository.TeamRepository
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -15,12 +17,17 @@ import kotlinx.coroutines.launch
 
 sealed interface MatchDetailUiState {
     data object Loading : MatchDetailUiState
-    data class Success(val match: Match) : MatchDetailUiState
+    data class Success(
+        val match: Match,
+        val homeStar: Star? = null,   // estrella de cada equipo (para la previa)
+        val awayStar: Star? = null
+    ) : MatchDetailUiState
     data class Error(val message: String) : MatchDetailUiState
 }
 
 class MatchDetailViewModel(
     private val matchRepository: MatchRepository,
+    private val teamRepository: TeamRepository,
     private val matchId: String
 ) : ViewModel() {
 
@@ -35,9 +42,7 @@ class MatchDetailViewModel(
                 delay(60_000)
                 val current = _uiState.value
                 if (current is MatchDetailUiState.Success && current.match.status == MatchStatus.LIVE) {
-                    runCatching { matchRepository.match(matchId) }.getOrNull()?.let {
-                        _uiState.value = MatchDetailUiState.Success(it)
-                    }
+                    runCatching { buildState() }.getOrNull()?.let { _uiState.value = it }
                 }
             }
         }
@@ -45,25 +50,30 @@ class MatchDetailViewModel(
 
     fun retry() = load()
 
+    private suspend fun buildState(): MatchDetailUiState {
+        val match = matchRepository.match(matchId) ?: return MatchDetailUiState.Error("Partido no encontrado")
+        // Estrellas para la previa (solo si el cruce ya tiene equipos definidos).
+        val homeStar = match.teamA.takeIf { it.isNotBlank() }
+            ?.let { runCatching { teamRepository.team(it)?.star }.getOrNull() }
+        val awayStar = match.teamB.takeIf { it.isNotBlank() }
+            ?.let { runCatching { teamRepository.team(it)?.star }.getOrNull() }
+        return MatchDetailUiState.Success(match, homeStar, awayStar)
+    }
+
     private fun load() {
         _uiState.value = MatchDetailUiState.Loading
         viewModelScope.launch {
-            try {
-                val match = matchRepository.match(matchId)
-                _uiState.value = if (match != null) {
-                    MatchDetailUiState.Success(match)
-                } else {
-                    MatchDetailUiState.Error("Partido no encontrado")
-                }
+            _uiState.value = try {
+                buildState()
             } catch (e: Exception) {
-                _uiState.value = MatchDetailUiState.Error(e.message ?: "Error al cargar el partido")
+                MatchDetailUiState.Error(e.message ?: "Error al cargar el partido")
             }
         }
     }
 
     companion object {
-        fun Factory(matchRepository: MatchRepository, matchId: String) = viewModelFactory {
-            initializer { MatchDetailViewModel(matchRepository, matchId) }
+        fun Factory(matchRepository: MatchRepository, teamRepository: TeamRepository, matchId: String) = viewModelFactory {
+            initializer { MatchDetailViewModel(matchRepository, teamRepository, matchId) }
         }
     }
 }

@@ -36,7 +36,8 @@ data class FifaMatchRef(
     val matchNumber: Int? = null,
     val placeholderA: String = "", val placeholderB: String = "",   // "W83" = ganador del 83, "L97" = perdedor
     val winnerTeamId: String? = null,
-    val idIfes: String = ""          // id interno del data hub (fdh-api) para stats del partido
+    val idIfes: String = "",         // id interno del data hub (fdh-api) para stats del partido
+    val stadium: String = "", val city: String = ""   // sede (localizada es-ES)
 )
 
 /** "W83" = ganador del 83; "L97"/"RU101" = perdedor (FIFA usa RU en el tercer puesto). */
@@ -135,6 +136,11 @@ fun parseFifaCalendar(json: String): List<FifaMatchRef> =
             fun str(o: Map<String, kotlinx.serialization.json.JsonElement>?, k: String) =
                 o?.get(k)?.takeIf { it !is kotlinx.serialization.json.JsonNull }?.jsonPrimitive?.content
             val date = str(m, "Date") ?: ""
+            // Nombre localizado: campos tipo [{"Locale":"es-ES","Description":"Estadio X"}]
+            fun localized(o: Map<String, kotlinx.serialization.json.JsonElement>?, k: String): String =
+                o?.get(k)?.takeIf { it !is kotlinx.serialization.json.JsonNull }?.jsonArray?.firstOrNull()
+                    ?.jsonObject?.get("Description")?.jsonPrimitive?.content ?: ""
+            val stadiumObj = side("Stadium")
             FifaMatchRef(
                 idMatch = str(m, "IdMatch") ?: return@runCatching null,
                 idStage = str(m, "IdStage") ?: "",
@@ -146,7 +152,8 @@ fun parseFifaCalendar(json: String): List<FifaMatchRef> =
                 matchNumber = str(m, "MatchNumber")?.toIntOrNull(),
                 placeholderA = str(m, "PlaceHolderA") ?: "", placeholderB = str(m, "PlaceHolderB") ?: "",
                 winnerTeamId = str(m, "Winner"),
-                idIfes = str(side("Properties"), "IdIFES") ?: ""
+                idIfes = str(side("Properties"), "IdIFES") ?: "",
+                stadium = localized(stadiumObj, "Name"), city = localized(stadiumObj, "CityName")
             )
         }.getOrNull()
     } ?: emptyList()

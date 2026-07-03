@@ -105,6 +105,10 @@ class DefaultMatchRepository(
             m.status != MatchStatus.UPCOMING && m.stats.isEmpty() -> estimatedStats(m) to true
             else -> m.stats to m.statsEstimated
         }
-        return m.copy(events = events, stats = stats, statsEstimated = estimated)
+        // Sede desde el calendario FIFA ("Estadio Akron · Guadalajara").
+        val venue = ref?.takeIf { it.stadium.isNotBlank() }
+            ?.let { r -> r.stadium + (r.city.takeIf { it.isNotBlank() && it != r.stadium }?.let { " · $it" } ?: "") }
+            ?: m.stadium
+        return m.copy(events = events, stats = stats, statsEstimated = estimated, stadium = venue)
     }
 }

@@ -131,7 +131,7 @@ fun MundialApp(container: AppContainer) {
             ) { entry ->
                 val id = entry.arguments?.getString(DetailRoutes.MATCH_ARG).orEmpty()
                 val vm: MatchDetailViewModel = viewModel(
-                    factory = MatchDetailViewModel.Factory(container.matchRepository, id)
+                    factory = MatchDetailViewModel.Factory(container.matchRepository, container.teamRepository, id)
                 )
                 MatchDetailScreen(viewModel = vm, onBack = { navController.popBackStack() })
             }

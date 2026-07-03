@@ -25,6 +25,7 @@ import androidx.compose.material.icons.outlined.SportsSoccer
 import androidx.compose.material.icons.outlined.SwapHoriz
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -48,6 +49,7 @@ import com.mundial26.app.domain.model.Match
 import com.mundial26.app.domain.model.MatchEvent
 import com.mundial26.app.domain.model.MatchStat
 import com.mundial26.app.domain.model.MatchStatus
+import com.mundial26.app.domain.model.Star
 import com.mundial26.app.ui.components.FlagAvatar
 import com.mundial26.app.ui.components.LiveMinutePill
 import com.mundial26.app.ui.theme.MundialTheme
@@ -77,7 +79,7 @@ fun MatchDetailScreen(
                 message = current.message,
                 onRetry = viewModel::retry
             )
-            is MatchDetailUiState.Success -> MatchDetailContent(match = current.match)
+            is MatchDetailUiState.Success -> MatchDetailContent(state = current)
         }
     }
 }
@@ -142,18 +144,147 @@ private fun ErrorContent(
 }
 
 @Composable
-private fun MatchDetailContent(match: Match, modifier: Modifier = Modifier) {
+private fun MatchDetailContent(state: MatchDetailUiState.Success, modifier: Modifier = Modifier) {
+    val match = state.match
     LazyColumn(
         modifier = modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
         item { MatchHero(match = match) }
+        if (match.status == MatchStatus.UPCOMING) {
+            item { InfoSection(match = match) }
+            if (state.homeStar != null || state.awayStar != null) {
+                item { StarsSection(match = match, homeStar = state.homeStar, awayStar = state.awayStar) }
+            }
+        }
         if (match.stats.isNotEmpty()) {
             item { StatsSection(stats = match.stats, estimated = match.statsEstimated) }
         }
         if (match.events.isNotEmpty()) {
             item { EventsSection(match = match) }
+        }
+    }
+}
+
+private val DIAS = arrayOf("Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo")
+private val MESES = arrayOf("enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre")
+
+/** "2026-07-03" → "Viernes 3 de julio"; si no parsea, el texto original. */
+private fun prettyDate(day: String?): String = runCatching {
+    val d = java.time.LocalDate.parse(day)
+    "${DIAS[d.dayOfWeek.value - 1]} ${d.dayOfMonth} de ${MESES[d.monthValue - 1]}"
+}.getOrDefault(day ?: "")
+
+/** Ficha de la previa: fase, fecha, hora y estadio. */
+@Composable
+private fun InfoSection(match: Match, modifier: Modifier = Modifier) {
+    val rows = buildList {
+        if (match.group.isNotBlank()) add("Fase" to match.group)
+        if (match.day != null) add("Fecha" to prettyDate(match.day))
+        if (match.time != null) add("Hora" to match.time)
+        if (match.stadium.isNotBlank()) {
+            val parts = match.stadium.split(" · ")
+            add("Estadio" to parts[0])
+            if (parts.size > 1) add("Ciudad" to parts[1])
+        }
+    }
+    if (rows.isEmpty()) return
+
+    Column(modifier = modifier.fillMaxWidth()) {
+        Text(
+            text = "DATOS DEL PARTIDO",
+            style = MaterialTheme.typography.labelLarge,
+            color = MundialTheme.colors.textTertiary
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(MundialTheme.shapes.medium)
+                .background(MundialTheme.colors.surface)
+                .padding(horizontal = 16.dp)
+        ) {
+            rows.forEachIndexed { index, (label, value) ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 12.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = label,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MundialTheme.colors.textTertiary
+                    )
+                    Text(
+                        text = value,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MundialTheme.colors.textPrimary,
+                        textAlign = TextAlign.End
+                    )
+                }
+                if (index != rows.lastIndex) HorizontalDivider(color = MundialTheme.colors.border)
+            }
+        }
+    }
+}
+
+/** Previa: la estrella de cada equipo, lado a lado. */
+@Composable
+private fun StarsSection(match: Match, homeStar: Star?, awayStar: Star?, modifier: Modifier = Modifier) {
+    Column(modifier = modifier.fillMaxWidth()) {
+        Text(
+            text = "FIGURAS DEL PARTIDO",
+            style = MaterialTheme.typography.labelLarge,
+            color = MundialTheme.colors.textTertiary
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            homeStar?.let { StarCard(star = it, iso = match.flagA, code = match.teamA, modifier = Modifier.weight(1f)) }
+            awayStar?.let { StarCard(star = it, iso = match.flagB, code = match.teamB, modifier = Modifier.weight(1f)) }
+        }
+    }
+}
+
+@Composable
+private fun StarCard(star: Star, iso: String, code: String, modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier
+            .clip(MundialTheme.shapes.medium)
+            .background(MundialTheme.colors.surface)
+            .padding(14.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        FlagAvatar(iso = iso, code = code, size = 36.dp)
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = star.name,
+            style = MaterialTheme.typography.bodyLarge,
+            fontWeight = FontWeight.Bold,
+            color = MundialTheme.colors.textPrimary,
+            textAlign = TextAlign.Center
+        )
+        Text(
+            text = star.pos,
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Bold,
+            color = MundialTheme.colors.brand,
+            textAlign = TextAlign.Center
+        )
+        if (star.stats.goals > 0 || star.stats.assists > 0) {
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = "${star.stats.goals} goles · ${star.stats.assists} asist.",
+                style = MaterialTheme.typography.labelSmall,
+                color = MundialTheme.colors.textTertiary,
+                textAlign = TextAlign.Center
+            )
         }
     }
 }
@@ -184,11 +315,21 @@ private fun MatchHero(match: Match, modifier: Modifier = Modifier) {
                 modifier = Modifier.weight(1f)
             ) {
                 Text(
-                    text = "${match.scoreA ?: 0} - ${match.scoreB ?: 0}",
+                    text = if (match.status == MatchStatus.UPCOMING) "VS"
+                        else "${match.scoreA ?: 0} - ${match.scoreB ?: 0}",
                     style = ScoreboardBig,
                     color = Color.White,
                     textAlign = TextAlign.Center
                 )
+                if (match.status == MatchStatus.UPCOMING && match.day != null) {
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = prettyDate(match.day) + (match.time?.let { " · $it" } ?: ""),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.White.copy(alpha = 0.7f),
+                        textAlign = TextAlign.Center
+                    )
+                }
                 if (match.penA != null && match.penB != null) {
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
@@ -502,6 +643,7 @@ private fun MatchDetailScreenPreview() {
         val viewModel: MatchDetailViewModel = viewModel(
             factory = MatchDetailViewModel.Factory(
                 FakeMatchRepository(),
+                com.mundial26.app.data.mock.FakeTeamRepository(),
                 MockData.matches[0].id
             )
         )
