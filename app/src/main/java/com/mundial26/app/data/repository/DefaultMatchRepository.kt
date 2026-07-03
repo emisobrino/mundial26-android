@@ -24,21 +24,26 @@ class DefaultMatchRepository(
         if (entities.isEmpty()) return MockData.matches
         return entities.map { e ->
             val m = e.toDomain()
-            // Cruces de eliminatorias sin definir: mostrar el posible cruce según FIFA
-            // ("PAR", "ESP/AUT" o "Gan. 93") en lugar de una fila vacía.
+            // Cruces de eliminatorias: si FIFA ya confirmó un equipo que football-data
+            // aún no tiene, usarlo; si el cruce sigue abierto, queda vacío → "A definir".
             if (m.teamA.isBlank() || m.teamB.isBlank()) {
                 val cross = runCatching { fifa.crossesFor(e.utcDate) }.getOrNull()
-                if (cross != null) m.copy(
-                    teamA = cross.first, teamB = cross.second,
-                    flagA = knownIso(cross.first), flagB = knownIso(cross.second)
-                ) else m
+                if (cross != null) {
+                    val a = confirmedOrBlank(cross.first)
+                    val b = confirmedOrBlank(cross.second)
+                    m.copy(
+                        teamA = a, teamB = b,
+                        flagA = if (a.isBlank()) "" else com.mundial26.app.data.net.tlaToIso(a),
+                        flagB = if (b.isBlank()) "" else com.mundial26.app.data.net.tlaToIso(b)
+                    )
+                } else m
             } else m
         }
     }
 
-    /** ISO-2 solo si el texto es un TLA real (3 letras); para "ESP/AUT" o "Gan. 93" no hay bandera. */
-    private fun knownIso(label: String): String =
-        if (Regex("[A-Z]{3}").matches(label)) com.mundial26.app.data.net.tlaToIso(label) else ""
+    /** Solo un equipo CONFIRMADO (TLA de 3 letras); "ESP/AUT" o "Gan. 93" → "" (A definir). */
+    private fun confirmedOrBlank(label: String): String =
+        if (Regex("[A-Z]{3}").matches(label)) label else ""
     override suspend fun refresh() { runCatching { sync.forceRefresh() } }
 
     /**
@@ -75,7 +80,10 @@ class DefaultMatchRepository(
         val entities = matchDao.all().map { e ->
             if (e.homeTla.isBlank() || e.awayTla.isBlank()) {
                 val cross = runCatching { fifa.crossesFor(e.utcDate) }.getOrNull()
-                if (cross != null) e.copy(homeTla = cross.first, awayTla = cross.second) else e
+                if (cross != null) e.copy(
+                    homeTla = confirmedOrBlank(cross.first),
+                    awayTla = confirmedOrBlank(cross.second)
+                ) else e
             } else e
         }
         return entities.toBracket().ifEmpty { MockData.bracket }

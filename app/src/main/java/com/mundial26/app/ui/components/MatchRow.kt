@@ -157,9 +157,9 @@ private fun CompactContent(match: Match, modifier: Modifier = Modifier) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = match.teamA,
+                    text = match.teamA.ifBlank { "A definir" },
                     style = MaterialTheme.typography.bodyLarge,
-                    color = MundialTheme.colors.textPrimary
+                    color = if (match.teamA.isBlank()) MundialTheme.colors.textFaint else MundialTheme.colors.textPrimary
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 FlagAvatar(iso = match.flagA, code = match.teamA, size = 24.dp)
@@ -177,9 +177,9 @@ private fun CompactContent(match: Match, modifier: Modifier = Modifier) {
                 FlagAvatar(iso = match.flagB, code = match.teamB, size = 24.dp)
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = match.teamB,
+                    text = match.teamB.ifBlank { "A definir" },
                     style = MaterialTheme.typography.bodyLarge,
-                    color = MundialTheme.colors.textPrimary
+                    color = if (match.teamB.isBlank()) MundialTheme.colors.textFaint else MundialTheme.colors.textPrimary
                 )
             }
         }
@@ -224,9 +224,9 @@ private fun FullNamesContent(match: Match, modifier: Modifier = Modifier) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(modifier = Modifier.weight(1f)) {
-            TeamLine(name = match.teamANameOrCode(), iso = match.flagA, code = match.teamA)
+            TeamLine(name = match.teamANameOrCode(), iso = match.flagA, code = match.teamA, dim = match.teamA.isBlank())
             Spacer(modifier = Modifier.height(8.dp))
-            TeamLine(name = match.teamBNameOrCode(), iso = match.flagB, code = match.teamB)
+            TeamLine(name = match.teamBNameOrCode(), iso = match.flagB, code = match.teamB, dim = match.teamB.isBlank())
         }
         Spacer(modifier = Modifier.width(8.dp))
         Column(horizontalAlignment = Alignment.End) {
@@ -258,23 +258,24 @@ private fun FullNamesContent(match: Match, modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun TeamLine(name: String, iso: String, code: String) {
+private fun TeamLine(name: String, iso: String, code: String, dim: Boolean = false) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         FlagAvatar(iso = iso, code = code, size = 22.dp)
         Spacer(modifier = Modifier.width(8.dp))
         Text(
             text = name,
             style = MaterialTheme.typography.bodyLarge,
-            color = MundialTheme.colors.textPrimary
+            color = if (dim) MundialTheme.colors.textFaint else MundialTheme.colors.textPrimary
         )
     }
 }
 
 // Los nombres completos no están en el modelo Match (solo códigos); se resuelven
 // contra la tabla de referencia de naciones del dominio, con fallback al código.
-private fun Match.teamANameOrCode(): String = Nations.name(teamA)
+// Cruce de eliminatorias aún sin equipo → "A definir".
+private fun Match.teamANameOrCode(): String = if (teamA.isBlank()) "A definir" else Nations.name(teamA)
 
-private fun Match.teamBNameOrCode(): String = Nations.name(teamB)
+private fun Match.teamBNameOrCode(): String = if (teamB.isBlank()) "A definir" else Nations.name(teamB)
 
 @Preview(showBackground = true)
 @Composable
