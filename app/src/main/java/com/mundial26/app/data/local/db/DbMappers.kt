@@ -51,7 +51,7 @@ private fun prettyStage(stage: String): String = when (stage) {
 }
 
 /** Construye el cuadro de eliminatorias a partir de los partidos de fase final (campo `stage`). */
-fun List<MatchEntity>.toBracket(): List<BracketRound> =
+fun List<MatchEntity>.toBracket(zone: java.time.ZoneId = java.time.ZoneId.systemDefault()): List<BracketRound> =
     filter { it.stage in KNOCKOUT_ORDER }
         .groupBy { it.stage }
         .toList()
@@ -60,12 +60,16 @@ fun List<MatchEntity>.toBracket(): List<BracketRound> =
             BracketRound(
                 round = prettyStage(stage),
                 games = matches.sortedBy { it.utcDate }.map { m ->
+                    val local = runCatching { java.time.Instant.parse(m.utcDate).atZone(zone) }.getOrNull()
                     BracketMatch(
                         a = m.homeTla, b = m.awayTla,
                         flagA = tlaToIso(m.homeTla), flagB = tlaToIso(m.awayTla),
                         sa = m.scoreHome, sb = m.scoreAway,
                         done = statusOf(m.status) == MatchStatus.FINISHED,
-                        pa = m.penHome, pb = m.penAway
+                        pa = m.penHome, pb = m.penAway,
+                        id = m.id,
+                        day = local?.toLocalDate()?.toString() ?: m.utcDate.take(10),
+                        time = local?.let { "%02d:%02d".format(it.hour, it.minute) }
                     )
                 }
             )

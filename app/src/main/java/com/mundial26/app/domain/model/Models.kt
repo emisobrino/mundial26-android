@@ -60,7 +60,9 @@ data class Group(val name: String, val rows: List<GroupRow>)
 data class BracketMatch(
     val a: String, val b: String, val flagA: String, val flagB: String,
     val sa: Int?, val sb: Int?, val done: Boolean,
-    val pa: Int? = null, val pb: Int? = null   // penales, si definieron la llave
+    val pa: Int? = null, val pb: Int? = null,   // penales, si definieron la llave
+    val id: String = "",                        // id del partido (navegar al detalle)
+    val day: String? = null, val time: String? = null   // fecha/hora LOCAL del dispositivo
 )
 data class BracketRound(val round: String, val games: List<BracketMatch>)
 
