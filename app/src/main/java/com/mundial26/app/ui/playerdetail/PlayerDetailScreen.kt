@@ -325,6 +325,15 @@ private fun FichaSection(state: PlayerDetailUiState.Success, modifier: Modifier 
     val rows = buildList {
         if (state.club.isNotBlank()) add("Club" to state.club)
         if (state.marketValue.isNotBlank()) add("Valor" to state.marketValue)
+        // Perfil FIFA (jugadores del plantel)
+        state.caps?.takeIf { it > 0 }?.let { add("Partidos con la selección" to "$it") }
+        state.intlGoals?.takeIf { it > 0 }?.let { add("Goles con la selección" to "$it") }
+        state.heightCm?.takeIf { it > 0 }?.let { add("Altura" to "%.2f m".format(it / 100.0)) }
+        state.weightKg?.takeIf { it > 0 }?.let { add("Peso" to "$it kg") }
+        when (state.preferredFoot) {
+            1 -> add("Pie hábil" to "Derecho")
+            2 -> add("Pie hábil" to "Izquierdo")
+        }
     }
     if (rows.isEmpty()) return
 

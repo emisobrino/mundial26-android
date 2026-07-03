@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.mundial26.app.data.net.tlaToIso
+import com.mundial26.app.data.remote.fifa.FifaStatsSource
 import com.mundial26.app.domain.repository.TeamRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -30,7 +31,13 @@ sealed interface PlayerDetailUiState {
         val age: Int,
         val rating: Double,       // 0.0 = sin dato → oculto
         val club: String,         // "" = oculto
-        val marketValue: String   // "" = oculto
+        val marketValue: String,  // "" = oculto
+        // Perfil FIFA (jugadores del plantel; null = sin dato → oculto)
+        val caps: Int? = null,
+        val intlGoals: Int? = null,
+        val heightCm: Int? = null,
+        val weightKg: Int? = null,
+        val preferredFoot: Int? = null   // 1 = derecho, 2 = izquierdo
     ) : PlayerDetailUiState
     data class Error(val message: String) : PlayerDetailUiState
 }
@@ -43,7 +50,8 @@ private sealed interface Source {
 
 class PlayerDetailViewModel private constructor(
     private val teamRepository: TeamRepository,
-    private val source: Source
+    private val source: Source,
+    private val fifa: FifaStatsSource = FifaStatsSource()
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<PlayerDetailUiState>(PlayerDetailUiState.Loading)
@@ -81,11 +89,16 @@ class PlayerDetailViewModel private constructor(
     private suspend fun loadPlayer(playerId: Long): PlayerDetailUiState {
         val p = teamRepository.player(playerId) ?: return PlayerDetailUiState.Error("Jugador no encontrado")
         val team = teamRepository.team(p.teamCode)
+        // Perfil FIFA por nombre+selección: caps, goles internacionales, altura, peso, pie.
+        val profile = runCatching { fifa.playerProfile(p.name, p.teamCode) }.getOrNull()
         return PlayerDetailUiState.Success(
             number = 0, name = p.name, position = p.position, note = "",
             teamName = team?.name ?: p.teamCode, teamFlag = team?.flag ?: tlaToIso(p.teamCode),
             goals = p.goals, assists = p.assists, age = p.age,
-            rating = 0.0, club = "", marketValue = ""
+            rating = 0.0, club = "", marketValue = "",
+            caps = profile?.caps, intlGoals = profile?.intlGoals,
+            heightCm = profile?.heightCm, weightKg = profile?.weightKg,
+            preferredFoot = profile?.preferredFoot
         )
     }
 

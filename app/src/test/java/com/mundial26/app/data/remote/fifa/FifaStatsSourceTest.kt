@@ -51,4 +51,32 @@ class FifaStatsSourceTest {
         assertEquals("Bruno Guimaraes", titleCaseName("BRUNO GUIMARAES"))
         assertEquals("Martin Odegaard", titleCaseName("  MARTIN ODEGAARD "))
     }
+
+    private val searchJson = """
+        {"Results":[
+          {"IdPlayer":"1","Name":[{"Description":"Khaled Salah"}],"IdCountry":"KSA",
+           "InternationalCaps":3,"Goals":0,"Height":175.0,"Weight":70.0,"PreferredFoot":1},
+          {"IdPlayer":"2","Name":[{"Description":"MOHAMED SALAH"}],"IdCountry":"EGY",
+           "InternationalCaps":104,"Goals":59,"Height":175.0,"Weight":71.0,"PreferredFoot":2}
+        ]}
+    """.trimIndent()
+
+    @Test fun busqueda_elige_por_pais_y_nombre() {
+        val p = parsePlayerSearch(searchJson, wantedName = "Mohamed Salah", wantedTla = "EGY")
+        assertEquals("Mohamed Salah", p?.name)
+        assertEquals(104, p?.caps)
+        assertEquals(59, p?.intlGoals)
+        assertEquals(175, p?.heightCm)
+        assertEquals(2, p?.preferredFoot)
+    }
+
+    @Test fun busqueda_matchea_por_apellido_si_el_nombre_difiere() {
+        val p = parsePlayerSearch(searchJson, wantedName = "M. Salah", wantedTla = "EGY")
+        assertEquals("Mohamed Salah", p?.name)
+    }
+
+    @Test fun busqueda_sin_candidato_del_pais_devuelve_null() {
+        assertNull(parsePlayerSearch(searchJson, "Mohamed Salah", "ARG"))
+        assertNull(parsePlayerSearch("basura", "X", "EGY"))
+    }
 }

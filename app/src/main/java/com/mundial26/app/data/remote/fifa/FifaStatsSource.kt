@@ -49,6 +49,47 @@ fun titleCaseName(raw: String): String =
     raw.trim().lowercase().split(" ").filter { it.isNotBlank() }
         .joinToString(" ") { w -> w.replaceFirstChar { it.uppercase() } }
 
+/** Perfil de jugador según FIFA (no incluye club ni valor: eso no tiene fuente gratuita). */
+data class FifaPlayerProfile(
+    val name: String, val country: String,
+    val caps: Int? = null,          // partidos con la selección
+    val intlGoals: Int? = null,     // goles con la selección (histórico)
+    val heightCm: Int? = null, val weightKg: Int? = null,
+    val preferredFoot: Int? = null  // 1 = derecho, 2 = izquierdo
+)
+
+private fun normName(s: String): String =
+    java.text.Normalizer.normalize(s, java.text.Normalizer.Form.NFD)
+        .replace(Regex("\\p{Mn}+"), "").lowercase().trim()
+
+/**
+ * Elige del resultado de `/players/search` al jugador buscado: mismo país (TLA) y
+ * nombre igual normalizado (o mismo apellido como fallback).
+ */
+fun parsePlayerSearch(json: String, wantedName: String, wantedTla: String): FifaPlayerProfile? = runCatching {
+    val results = AppJson.parseToJsonElement(json).jsonObject["Results"]?.jsonArray ?: return null
+    val wanted = normName(wantedName)
+    val wantedLast = wanted.substringAfterLast(' ')
+    val candidates = results.mapNotNull { el ->
+        runCatching {
+            val o = el.jsonObject
+            fun str(k: String) = o[k]?.takeIf { it !is kotlinx.serialization.json.JsonNull }?.jsonPrimitive?.content
+            val name = o["Name"]?.jsonArray?.firstOrNull()?.jsonObject?.get("Description")?.jsonPrimitive?.content
+                ?: return@runCatching null
+            FifaPlayerProfile(
+                name = titleCaseName(name), country = str("IdCountry") ?: "",
+                caps = str("InternationalCaps")?.toDoubleOrNull()?.toInt(),
+                intlGoals = str("Goals")?.toDoubleOrNull()?.toInt(),
+                heightCm = str("Height")?.toDoubleOrNull()?.toInt(),
+                weightKg = str("Weight")?.toDoubleOrNull()?.toInt(),
+                preferredFoot = str("PreferredFoot")?.toDoubleOrNull()?.toInt()
+            )
+        }.getOrNull()
+    }
+    candidates.firstOrNull { it.country == wantedTla && normName(it.name) == wanted }
+        ?: candidates.firstOrNull { it.country == wantedTla && normName(it.name).substringAfterLast(' ') == wantedLast }
+}.getOrNull()
+
 class FifaStatsSource(private val client: OkHttpClient = OkHttpClient()) {
     private val cache = mutableMapOf<String, Pair<Long, List<Leader>>>()   // statName → (timestamp, ranking)
     private val playerRefs = mutableMapOf<String, FifaPlayerRef>()          // idJugador → nombre/país
@@ -78,6 +119,24 @@ class FifaStatsSource(private val client: OkHttpClient = OkHttpClient()) {
         }.getOrDefault(emptyList())
         if (result.isNotEmpty()) cache[statName] = System.currentTimeMillis() to result
         result
+    }
+
+    private val profileCache = mutableMapOf<String, FifaPlayerProfile?>()
+
+    /** Perfil FIFA de un jugador por nombre + selección (caps, goles internacionales, físico). */
+    suspend fun playerProfile(name: String, tla: String): FifaPlayerProfile? = withContext(Dispatchers.IO) {
+        val key = "$tla|$name"
+        if (profileCache.containsKey(key)) return@withContext profileCache[key]
+        val profile = runCatching {
+            // La búsqueda de FIFA no tolera acentos ("Fernández" → 0 resultados).
+            val query = java.text.Normalizer.normalize(name, java.text.Normalizer.Form.NFD)
+                .replace(Regex("\\p{Mn}+"), "")
+            val encoded = java.net.URLEncoder.encode(query, "UTF-8")
+            get("https://api.fifa.com/api/v3/players/search?name=$encoded&language=es&count=50")
+                ?.let { parsePlayerSearch(it, name, tla) }
+        }.getOrNull()
+        profileCache[key] = profile
+        profile
     }
 
     /** Top-N goleadores oficiales de FIFA; lista vacía si la red falla (el repo degrada a otra fuente). */
