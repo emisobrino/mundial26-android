@@ -18,9 +18,10 @@ private class FakeApi : FootballDataApi {
     override suspend fun standings(c: String) = FdStandingsResponse(listOf(
         FdStanding("TOTAL", "Group A", listOf(FdTableRow(1, FdTeamRef("MEX"), 1,1,0,0,3,2,0)))))
     override suspend fun teams(c: String) = FdTeamsResponse(listOf(
-        FdTeam("ARG", "Argentina", "", listOf(FdSquadPlayer("Lionel Messi", "Offence", "1987-06-24")))))
+        FdTeam("ARG", "Argentina", "", listOf(FdSquadPlayer(10L, "Lionel Messi", "Offence", "1987-06-24")))))
     override suspend fun scorers(c: String, limit: Int) = FdScorersResponse(listOf(
         FdScorer(FdPlayer("Lionel Messi"), FdTeamRef("ARG"), goals = 5, assists = 3)))
+    override suspend fun person(id: Long) = FdPerson("Lionel Messi", shirtNumber = 10, currentTeam = FdCurrentTeam("Inter Miami CF"))
 }
 
 @RunWith(RobolectricTestRunner::class)

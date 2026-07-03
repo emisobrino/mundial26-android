@@ -19,6 +19,8 @@ interface TeamRepository {
     suspend fun team(id: String): Team?
     /** Jugador del plantel por su id de Room (para el detalle de jugador navegable). */
     suspend fun player(playerId: Long): Player? = null
+    /** Club actual y dorsal del jugador (red, cacheado); null si no hay dato. */
+    suspend fun playerClub(playerId: Long): PlayerClubInfo? = null
     suspend fun topScorers(): List<Leader>
     suspend fun topAssists(): List<Leader>
     /** Fuerza una resincronización (pull-to-refresh), ignorando el TTL. */

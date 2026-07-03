@@ -14,7 +14,8 @@ data class TeamEntity(
 data class PlayerEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val teamTla: String, val name: String, val position: String = "",
-    val dateOfBirth: String = "", val goals: Int = 0, val assists: Int = 0
+    val dateOfBirth: String = "", val goals: Int = 0, val assists: Int = 0,
+    val fdId: Long? = null   // id de football-data (para /persons/{id}: club y dorsal)
 )
 
 @Entity(tableName = "standings", primaryKeys = ["grp", "tla"])

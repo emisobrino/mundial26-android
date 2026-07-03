@@ -61,4 +61,7 @@ class SyncManager(
 
     /** Refresco forzado (pull-to-refresh): ignora el TTL y vuelve a traer standings/matches/scorers. */
     suspend fun forceRefresh() = mutex.withLock { seedLocked(); refreshLocked(force = true) }
+
+    /** Perfil de persona de football-data (club actual y dorsal); null si falla. */
+    suspend fun person(fdId: Long): FdPerson? = runCatching { api.person(fdId) }.getOrNull()
 }

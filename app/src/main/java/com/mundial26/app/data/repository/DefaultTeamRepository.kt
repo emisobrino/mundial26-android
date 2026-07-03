@@ -66,6 +66,23 @@ class DefaultTeamRepository(
         return playerDao.byId(playerId)?.toPlayer()
     }
 
+    private val clubCache = mutableMapOf<Long, PlayerClubInfo?>()
+
+    override suspend fun playerClub(playerId: Long): PlayerClubInfo? {
+        if (clubCache.containsKey(playerId)) return clubCache[playerId]
+        val info = runCatching {
+            val fdId = playerDao.byId(playerId)?.fdId ?: return@runCatching null
+            val person = fdApiPerson(fdId) ?: return@runCatching null
+            val club = person.currentTeam?.name.orEmpty()
+            if (club.isBlank() && person.shirtNumber == null) null
+            else PlayerClubInfo(club = club, shirtNumber = person.shirtNumber)
+        }.getOrNull()
+        clubCache[playerId] = info
+        return info
+    }
+
+    private suspend fun fdApiPerson(fdId: Long) = runCatching { sync.person(fdId) }.getOrNull()
+
     override suspend fun topScorers(): List<Leader> {
         fresh()
         // Prioridad: FIFA oficial (misma fuente que el panel de Google); DB de football-data como fallback.

@@ -91,11 +91,16 @@ class PlayerDetailViewModel private constructor(
         val team = teamRepository.team(p.teamCode)
         // Perfil FIFA por nombre+selección: caps, goles internacionales, altura, peso, pie.
         val profile = runCatching { fifa.playerProfile(p.name, p.teamCode) }.getOrNull()
+        // Club actual y dorsal desde football-data /persons. Durante el Mundial, para
+        // algunos jugadores currentTeam es la propia selección → en ese caso se oculta.
+        val clubInfo = runCatching { teamRepository.playerClub(playerId) }.getOrNull()
+        val teamName = team?.name ?: p.teamCode
+        val club = clubInfo?.club?.takeIf { it.isNotBlank() && !it.equals(teamName, true) }.orEmpty()
         return PlayerDetailUiState.Success(
-            number = 0, name = p.name, position = p.position, note = "",
-            teamName = team?.name ?: p.teamCode, teamFlag = team?.flag ?: tlaToIso(p.teamCode),
+            number = clubInfo?.shirtNumber ?: 0, name = p.name, position = p.position, note = "",
+            teamName = teamName, teamFlag = team?.flag ?: tlaToIso(p.teamCode),
             goals = p.goals, assists = p.assists, age = p.age,
-            rating = 0.0, club = "", marketValue = "",
+            rating = 0.0, club = club, marketValue = "",
             caps = profile?.caps, intlGoals = profile?.intlGoals,
             heightCm = profile?.heightCm, weightKg = profile?.weightKg,
             preferredFoot = profile?.preferredFoot

@@ -40,4 +40,4 @@ fun FdStandingsResponse.toEntities(): List<StandingEntity> =
     }
 
 fun FdTeam.toPlayerEntities(): List<PlayerEntity> =
-    squad.map { PlayerEntity(teamTla = tla, name = it.name, position = it.position ?: "", dateOfBirth = it.dateOfBirth ?: "") }
+    squad.map { PlayerEntity(teamTla = tla, name = it.name, position = it.position ?: "", dateOfBirth = it.dateOfBirth ?: "", fdId = it.id) }

@@ -9,4 +9,6 @@ interface FootballDataApi {
     @GET("competitions/{c}/teams") suspend fun teams(@Path("c") c: String = "WC"): FdTeamsResponse
     // limit=100 para actualizar goles/asistencias de TODOS los que convirtieron (no solo el top).
     @GET("competitions/{c}/scorers") suspend fun scorers(@Path("c") c: String = "WC", @Query("limit") limit: Int = 100): FdScorersResponse
+    // Perfil de persona: club actual y dorsal.
+    @GET("persons/{id}") suspend fun person(@Path("id") id: Long): FdPerson
 }
