@@ -272,13 +272,22 @@ class FifaMatchSource(private val client: OkHttpClient = OkHttpClient()) {
         }
     }
 
-    /** Cruce (definido o posible) para un partido sin equipos, por fecha-hora UTC exacta. */
+    /**
+     * Cruce para un partido sin equipos en nuestra DB, por fecha-hora UTC exacta.
+     * Cada lado se resuelve por separado: FIFA puede tener el partido totalmente
+     * definido, parcialmente ("SUI vs W87") o solo con placeholders.
+     */
     suspend fun crossesFor(utcDate: String): Pair<String, String>? {
         val cal = calendar()
-        val entry = cal.firstOrNull { it.utcDate == utcDate && it.homeTla.isBlank() } ?: return null
-        if (entry.placeholderA.isBlank() && entry.placeholderB.isBlank()) return null
+        val entry = cal.firstOrNull { it.utcDate == utcDate } ?: return null
         val byNumber = cal.mapNotNull { r -> r.matchNumber?.let { it to r } }.toMap()
-        return resolveCross(entry.placeholderA, byNumber) to resolveCross(entry.placeholderB, byNumber)
+        val a = entry.homeTla.ifBlank {
+            if (entry.placeholderA.isBlank()) return null else resolveCross(entry.placeholderA, byNumber)
+        }
+        val b = entry.awayTla.ifBlank {
+            if (entry.placeholderB.isBlank()) return null else resolveCross(entry.placeholderB, byNumber)
+        }
+        return a to b
     }
 
     /** Eventos reales (goles, tarjetas, cambios) del partido; vacío si falla. */
