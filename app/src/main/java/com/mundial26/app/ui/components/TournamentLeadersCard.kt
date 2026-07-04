@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -32,19 +33,36 @@ import com.mundial26.app.ui.theme.MundialTheme
 
 /**
  * Widget "Líderes del torneo" de la pantalla Inicio: tarjeta oscura con franja
- * tricolor, segmentado Goleadores / Asistidores y top-5 con bandera, nombre,
+ * tricolor, pestañas Goles / Asist. / 🟨 / 🟥 y top-5 con bandera, nombre,
  * barra de progreso proporcional y valor.
  */
 @Composable
 fun TournamentLeadersCard(
     scorers: List<Leader>,
     assists: List<Leader>,
+    yellowCards: List<Leader> = emptyList(),
+    redCards: List<Leader> = emptyList(),
     modifier: Modifier = Modifier
 ) {
     var tab by remember { mutableIntStateOf(0) }
-    val leaders = if (tab == 0) scorers else assists
-    val accent = if (tab == 0) MundialTheme.colors.brand else MundialTheme.colors.win
-    val unit = if (tab == 0) "goles" else "asist."
+    val leaders = when (tab) {
+        0 -> scorers
+        1 -> assists
+        2 -> yellowCards
+        else -> redCards
+    }
+    val accent = when (tab) {
+        0 -> MundialTheme.colors.brand
+        1 -> MundialTheme.colors.win
+        2 -> MundialTheme.colors.yellow
+        else -> MundialTheme.colors.live
+    }
+    val unit = when (tab) {
+        0 -> "goles"
+        1 -> "asist."
+        2 -> "amar."
+        else -> "rojas"
+    }
     val maxValue = (leaders.maxOfOrNull { it.value } ?: 1).coerceAtLeast(1)
 
     Column(
@@ -61,17 +79,35 @@ fun TournamentLeadersCard(
         Column(modifier = Modifier.padding(16.dp)) {
             LeadersToggle(selected = tab, onSelect = { tab = it })
             Spacer(modifier = Modifier.height(16.dp))
-            leaders.forEachIndexed { index, leader ->
+            if (leaders.isEmpty()) {
+                Text(
+                    text = "Sin datos todavía.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.White.copy(alpha = 0.5f)
+                )
+            }
+            leaders.take(5).forEachIndexed { index, leader ->
                 LeaderRow(
                     leader = leader,
                     unit = unit,
                     accent = accent,
                     fraction = leader.value.toFloat() / maxValue
                 )
-                if (index < leaders.lastIndex) Spacer(modifier = Modifier.height(14.dp))
+                if (index < leaders.take(5).lastIndex) Spacer(modifier = Modifier.height(14.dp))
             }
         }
     }
+}
+
+/** Icono de tarjeta (amarilla/roja) para las pestañas del toggle. */
+@Composable
+fun CardTabIcon(color: Color, modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier
+            .size(width = 11.dp, height = 15.dp)
+            .clip(RoundedCornerShape(2.dp))
+            .background(color)
+    )
 }
 
 @Composable
@@ -80,7 +116,6 @@ private fun LeadersToggle(
     onSelect: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val options = listOf("Goleadores", "Asistidores")
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -88,23 +123,28 @@ private fun LeadersToggle(
             .background(Color.White.copy(alpha = 0.08f))
             .padding(4.dp)
     ) {
-        options.forEachIndexed { index, label ->
+        // Goles y Asist. con texto; tarjetas con su icono de color.
+        repeat(4) { index ->
             val active = index == selected
             Box(
                 modifier = Modifier
-                    .weight(1f)
+                    .weight(if (index < 2) 1.4f else 1f)
                     .clip(RoundedCornerShape(10.dp))
                     .background(if (active) MundialTheme.colors.brandDeep else Color.Transparent)
                     .clickable { onSelect(index) }
                     .padding(vertical = 10.dp),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = label,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = if (active) Color.White else Color.White.copy(alpha = 0.5f)
-                )
+                when (index) {
+                    0, 1 -> Text(
+                        text = if (index == 0) "Goles" else "Asist.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = if (active) Color.White else Color.White.copy(alpha = 0.5f)
+                    )
+                    2 -> CardTabIcon(color = MundialTheme.colors.yellow.copy(alpha = if (active) 1f else 0.55f))
+                    else -> CardTabIcon(color = MundialTheme.colors.live.copy(alpha = if (active) 1f else 0.55f))
+                }
             }
         }
     }

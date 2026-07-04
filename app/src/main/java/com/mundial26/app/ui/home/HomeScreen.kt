@@ -262,7 +262,9 @@ private fun HomeContent(
                 )
                 TournamentLeadersCard(
                     scorers = state.scorers,
-                    assists = state.assists
+                    assists = state.assists,
+                    yellowCards = state.yellowCards,
+                    redCards = state.redCards
                 )
             }
         }

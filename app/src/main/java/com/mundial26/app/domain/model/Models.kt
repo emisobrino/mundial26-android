@@ -82,5 +82,6 @@ data class Player(
     val position: String,
     val age: Int,
     val goals: Int,
-    val assists: Int
+    val assists: Int,
+    val captain: Boolean = false
 )
