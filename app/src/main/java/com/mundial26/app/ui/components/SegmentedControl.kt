@@ -49,7 +49,7 @@ fun SegmentedControl(
                     .weight(1f)
                     .height(34.dp)
                     .clip(RoundedCornerShape(10.dp))
-                    .background(if (isSelected) MundialTheme.colors.brand else Color.Transparent)
+                    .background(if (isSelected) MundialTheme.colors.brandDeep else Color.Transparent)
                     .clickable(
                         interactionSource = interactionSource,
                         indication = null

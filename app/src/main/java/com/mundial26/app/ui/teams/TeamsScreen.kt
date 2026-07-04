@@ -224,7 +224,7 @@ private fun ConfFilterRow(
                 modifier = Modifier
                     .clip(RoundedCornerShape(20.dp))
                     .background(
-                        if (isSelected) MundialTheme.colors.brand else MundialTheme.colors.surface
+                        if (isSelected) MundialTheme.colors.brandDeep else MundialTheme.colors.surface
                     )
                     .clickable { onSelect(filter) }
                     .padding(horizontal = 16.dp, vertical = 8.dp),

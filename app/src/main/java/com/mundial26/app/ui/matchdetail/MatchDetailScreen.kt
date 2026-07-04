@@ -373,7 +373,7 @@ private fun TricolorStripe(modifier: Modifier = Modifier) {
     ) {
         Box(modifier = Modifier.weight(1f).fillMaxSize().background(MundialTheme.colors.win))
         Box(modifier = Modifier.weight(1f).fillMaxSize().background(MundialTheme.colors.live))
-        Box(modifier = Modifier.weight(1f).fillMaxSize().background(MundialTheme.colors.brand))
+        Box(modifier = Modifier.weight(1f).fillMaxSize().background(MundialTheme.colors.brandDeep))
     }
 }
 

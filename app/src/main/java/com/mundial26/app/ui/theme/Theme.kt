@@ -1,19 +1,19 @@
 package com.mundial26.app.ui.theme
 
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.lightColorScheme
+import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.graphics.Color
 
-private val MundialColorScheme = lightColorScheme(
-    primary = Brand,
+private val MundialColorScheme = darkColorScheme(
+    primary = BrandDeep,          // botones/controles M3: azul identidad con texto blanco
     onPrimary = Color.White,
     secondary = Win,
     onSecondary = Color.White,
     tertiary = Yellow,
-    onTertiary = TextPrimary,
+    onTertiary = Color(0xFF1C1E1E),
     error = Live,
     onError = Color.White,
     background = AppBg,
@@ -24,8 +24,8 @@ private val MundialColorScheme = lightColorScheme(
     onSurfaceVariant = TextSecondary,
     outline = BorderLight,
     outlineVariant = BorderLight,
-    inverseSurface = SurfaceDark,
-    inverseOnSurface = Color.White
+    inverseSurface = TextPrimary,
+    inverseOnSurface = AppBg
 )
 
 object MundialTheme {

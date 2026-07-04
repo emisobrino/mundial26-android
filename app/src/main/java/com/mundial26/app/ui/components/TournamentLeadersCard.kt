@@ -56,7 +56,7 @@ fun TournamentLeadersCard(
         Row(modifier = Modifier.fillMaxWidth().height(4.dp)) {
             Box(modifier = Modifier.weight(1f).fillMaxHeight().background(MundialTheme.colors.win))
             Box(modifier = Modifier.weight(1f).fillMaxHeight().background(MundialTheme.colors.live))
-            Box(modifier = Modifier.weight(1f).fillMaxHeight().background(MundialTheme.colors.brand))
+            Box(modifier = Modifier.weight(1f).fillMaxHeight().background(MundialTheme.colors.brandDeep))
         }
         Column(modifier = Modifier.padding(16.dp)) {
             LeadersToggle(selected = tab, onSelect = { tab = it })
@@ -94,7 +94,7 @@ private fun LeadersToggle(
                 modifier = Modifier
                     .weight(1f)
                     .clip(RoundedCornerShape(10.dp))
-                    .background(if (active) MundialTheme.colors.brand else Color.Transparent)
+                    .background(if (active) MundialTheme.colors.brandDeep else Color.Transparent)
                     .clickable { onSelect(index) }
                     .padding(vertical = 10.dp),
                 contentAlignment = Alignment.Center

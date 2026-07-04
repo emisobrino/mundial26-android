@@ -348,7 +348,7 @@ private fun FeaturedTeamCard(
         Row(modifier = Modifier.fillMaxWidth().height(4.dp)) {
             Box(modifier = Modifier.weight(1f).fillMaxSize().background(MundialTheme.colors.win))
             Box(modifier = Modifier.weight(1f).fillMaxSize().background(MundialTheme.colors.live))
-            Box(modifier = Modifier.weight(1f).fillMaxSize().background(MundialTheme.colors.brand))
+            Box(modifier = Modifier.weight(1f).fillMaxSize().background(MundialTheme.colors.brandDeep))
         }
         Row(
             modifier = Modifier

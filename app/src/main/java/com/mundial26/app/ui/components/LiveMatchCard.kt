@@ -48,7 +48,7 @@ fun LiveMatchCard(
         Row(modifier = Modifier.fillMaxWidth().height(4.dp)) {
             Box(modifier = Modifier.weight(1f).fillMaxHeight().background(MundialTheme.colors.win))
             Box(modifier = Modifier.weight(1f).fillMaxHeight().background(MundialTheme.colors.live))
-            Box(modifier = Modifier.weight(1f).fillMaxHeight().background(MundialTheme.colors.brand))
+            Box(modifier = Modifier.weight(1f).fillMaxHeight().background(MundialTheme.colors.brandDeep))
         }
 
         Column(modifier = Modifier.padding(16.dp)) {
