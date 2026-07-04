@@ -1,5 +1,13 @@
 package com.mundial26.app.ui.components
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -86,12 +94,23 @@ fun LiveMatchCard(
                 }
 
                 Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
-                    Text(
-                        text = "${match.scoreA ?: 0} - ${match.scoreB ?: 0}",
-                        style = ScoreboardCard,
-                        color = Color.White,
-                        textAlign = TextAlign.Center
-                    )
+                    // ¡Gol!: el marcador nuevo entra rodando desde abajo (250 ms, ease-out).
+                    AnimatedContent(
+                        targetState = "${match.scoreA ?: 0} - ${match.scoreB ?: 0}",
+                        transitionSpec = {
+                            (slideInVertically(animationSpec = tween(250, easing = FastOutSlowInEasing)) { it / 2 } +
+                                fadeIn(tween(250))) togetherWith
+                                (slideOutVertically(animationSpec = tween(180)) { -it / 2 } + fadeOut(tween(180)))
+                        },
+                        label = "score"
+                    ) { score ->
+                        Text(
+                            text = score,
+                            style = ScoreboardCard,
+                            color = Color.White,
+                            textAlign = TextAlign.Center
+                        )
+                    }
                 }
 
                 Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {

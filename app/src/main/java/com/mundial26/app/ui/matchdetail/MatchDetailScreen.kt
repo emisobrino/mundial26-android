@@ -1,5 +1,14 @@
 package com.mundial26.app.ui.matchdetail
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -314,13 +323,24 @@ private fun MatchHero(match: Match, modifier: Modifier = Modifier) {
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier.weight(1f)
             ) {
-                Text(
-                    text = if (match.status == MatchStatus.UPCOMING) "VS"
+                // ¡Gol!: el marcador nuevo entra rodando desde abajo (250 ms, ease-out).
+                AnimatedContent(
+                    targetState = if (match.status == MatchStatus.UPCOMING) "VS"
                         else "${match.scoreA ?: 0} - ${match.scoreB ?: 0}",
-                    style = ScoreboardBig,
-                    color = Color.White,
-                    textAlign = TextAlign.Center
-                )
+                    transitionSpec = {
+                        (slideInVertically(animationSpec = tween(250, easing = FastOutSlowInEasing)) { it / 2 } +
+                            fadeIn(tween(250))) togetherWith
+                            (slideOutVertically(animationSpec = tween(180)) { -it / 2 } + fadeOut(tween(180)))
+                    },
+                    label = "score"
+                ) { score ->
+                    Text(
+                        text = score,
+                        style = ScoreboardBig,
+                        color = Color.White,
+                        textAlign = TextAlign.Center
+                    )
+                }
                 if (match.status == MatchStatus.UPCOMING && match.day != null) {
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
@@ -457,8 +477,12 @@ private fun StatRow(stat: MatchStat, modifier: Modifier = Modifier) {
         }
         Spacer(modifier = Modifier.height(8.dp))
         val total = (stat.a + stat.b).coerceAtLeast(1)
-        val weightA = stat.a.toFloat() / total
-        val weightB = stat.b.toFloat() / total
+        // La barra se desliza suave cuando la stat cambia en un refresh en vivo.
+        val weightA by animateFloatAsState(
+            targetValue = (stat.a.toFloat() / total).coerceAtLeast(0.001f),
+            animationSpec = tween(300, easing = FastOutSlowInEasing),
+            label = "statBar"
+        )
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -467,13 +491,13 @@ private fun StatRow(stat: MatchStat, modifier: Modifier = Modifier) {
         ) {
             Box(
                 modifier = Modifier
-                    .weight(weightA.coerceAtLeast(0.001f))
+                    .weight(weightA)
                     .fillMaxSize()
                     .background(MundialTheme.colors.brand)
             )
             Box(
                 modifier = Modifier
-                    .weight(weightB.coerceAtLeast(0.001f))
+                    .weight((1f - weightA).coerceAtLeast(0.001f))
                     .fillMaxSize()
                     .background(Color.White.copy(alpha = 0.25f))
             )

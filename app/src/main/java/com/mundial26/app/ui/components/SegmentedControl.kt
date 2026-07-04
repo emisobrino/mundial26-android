@@ -1,5 +1,8 @@
 package com.mundial26.app.ui.components
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -12,6 +15,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -44,12 +48,23 @@ fun SegmentedControl(
         options.forEachIndexed { index, option ->
             val isSelected = index == selected
             val interactionSource = remember { MutableInteractionSource() }
+            // Feedback de selección: el fondo y el texto transicionan en 150 ms.
+            val bg by animateColorAsState(
+                targetValue = if (isSelected) MundialTheme.colors.brandDeep else Color.Transparent,
+                animationSpec = tween(150, easing = FastOutSlowInEasing),
+                label = "segBg"
+            )
+            val fg by animateColorAsState(
+                targetValue = if (isSelected) Color.White else MundialTheme.colors.textTertiary,
+                animationSpec = tween(150, easing = FastOutSlowInEasing),
+                label = "segFg"
+            )
             Box(
                 modifier = Modifier
                     .weight(1f)
                     .height(34.dp)
                     .clip(RoundedCornerShape(10.dp))
-                    .background(if (isSelected) MundialTheme.colors.brandDeep else Color.Transparent)
+                    .background(bg)
                     .clickable(
                         interactionSource = interactionSource,
                         indication = null
@@ -59,7 +74,7 @@ fun SegmentedControl(
                 Text(
                     text = option,
                     style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
-                    color = if (isSelected) Color.White else MundialTheme.colors.textTertiary,
+                    color = fg,
                     textAlign = TextAlign.Center
                 )
             }
