@@ -53,12 +53,12 @@ class HomeViewModel(
 
     init {
         load()
-        // Con partidos en juego, refresca en silencio cada 60 s (minuto/marcador en vivo).
+        // Refresco silencioso cada 30 s: goles/minuto en vivo y promoción automática
+        // de partidos que arrancan, sin necesidad de pull-to-refresh.
         viewModelScope.launch {
             while (true) {
-                kotlinx.coroutines.delay(60_000)
-                val current = _uiState.value
-                if (current is HomeUiState.Success && current.live.isNotEmpty()) loadData(silent = true)
+                kotlinx.coroutines.delay(30_000)
+                if (_uiState.value is HomeUiState.Success) loadData(silent = true)
             }
         }
     }

@@ -69,42 +69,42 @@ fun LiveMatchCard(
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.widthIn(min = 56.dp)
-                ) {
-                    FlagAvatar(iso = match.flagA, code = match.teamA, size = 40.dp)
-                    Spacer(modifier = Modifier.height(6.dp))
+                // Tres tercios iguales → el marcador queda en el centro geométrico.
+                Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        FlagAvatar(iso = match.flagA, code = match.teamA, size = 44.dp)
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = match.teamA,
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                    }
+                }
+
+                Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
                     Text(
-                        text = match.teamA,
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
+                        text = "${match.scoreA ?: 0} - ${match.scoreB ?: 0}",
+                        style = ScoreboardCard,
+                        color = Color.White,
+                        textAlign = TextAlign.Center
                     )
                 }
 
-                Text(
-                    text = "${match.scoreA ?: 0} - ${match.scoreB ?: 0}",
-                    style = ScoreboardCard,
-                    color = Color.White,
-                    textAlign = TextAlign.Center
-                )
-
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.widthIn(min = 56.dp)
-                ) {
-                    FlagAvatar(iso = match.flagB, code = match.teamB, size = 40.dp)
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Text(
-                        text = match.teamB,
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
+                Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        FlagAvatar(iso = match.flagB, code = match.teamB, size = 44.dp)
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = match.teamB,
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                    }
                 }
             }
 

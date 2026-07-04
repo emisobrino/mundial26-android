@@ -93,12 +93,12 @@ val ScoreboardBig = TextStyle(
     letterSpacing = (-2).sp
 )
 
-/** Marcador de tarjeta "en vivo" en Inicio: 34sp / 900 (el marcador manda). */
+/** Marcador de tarjeta "en vivo" en Inicio: 42sp / 900 (el marcador manda). */
 val ScoreboardCard = TextStyle(
     fontFamily = Archivo,
     fontWeight = FontWeight(900),
-    fontSize = 34.sp,
-    letterSpacing = (-1).sp
+    fontSize = 42.sp,
+    letterSpacing = (-1.5).sp
 )
 
 /** Micro-label (badges, sellos pequeños): 9sp / 700. */

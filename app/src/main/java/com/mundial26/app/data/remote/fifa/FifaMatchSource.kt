@@ -326,7 +326,7 @@ class FifaMatchSource(private val client: OkHttpClient = OkHttpClient()) {
     }
 
     private var liveCache: Pair<Long, List<FifaLiveInfo>>? = null
-    private val liveTtl = 60 * 1000L
+    private val liveTtl = 25 * 1000L   // corto: un gol debe verse sin pull-to-refresh
 
     /** Partidos en curso ahora según FIFA (minuto oficial + marcador); vacío si falla. Caché 60 s. */
     suspend fun liveNow(): List<FifaLiveInfo> = withContext(Dispatchers.IO) {
