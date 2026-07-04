@@ -9,6 +9,7 @@ import com.mundial26.app.data.local.db.toLeader
 import com.mundial26.app.data.local.db.toPlayer
 import com.mundial26.app.data.mock.MockData
 import com.mundial26.app.data.net.tlaToIso
+import com.mundial26.app.data.remote.fifa.FifaMatchSource
 import com.mundial26.app.data.remote.fifa.FifaStatsSource
 import com.mundial26.app.data.sync.SyncManager
 import com.mundial26.app.domain.model.*
@@ -17,7 +18,8 @@ import com.mundial26.app.domain.repository.TeamRepository
 class DefaultTeamRepository(
     private val sync: SyncManager, private val teamDao: TeamDao,
     private val playerDao: PlayerDao, private val standingDao: StandingDao,
-    private val fifa: FifaStatsSource = FifaStatsSource()
+    private val fifa: FifaStatsSource = FifaStatsSource(),
+    private val fifaMatch: FifaMatchSource = FifaMatchSource()
 ) : TeamRepository {
 
     private suspend fun fresh() { runCatching { sync.ensureFresh() } }
@@ -58,7 +60,30 @@ class DefaultTeamRepository(
     override suspend fun team(id: String): Team? {
         val team = teams().firstOrNull { it.id == id || it.code.equals(id, true) } ?: return null
         val squad = playerDao.byTeam(team.code).map { it.toPlayer() }
-        return team.copy(squad = squad)
+        return team.copy(squad = enrichSquad(team.code, squad))
+    }
+
+    /**
+     * Enriquece el plantel con datos FIFA: capitán (de la alineación) y goles/asistencias
+     * REALES de todos los jugadores (por id, no solo los que están en el ranking de líderes).
+     * Empareja por nombre normalizado (con fallback por apellido). Si FIFA no responde,
+     * devuelve el plantel tal cual (goles/asistencias de football-data).
+     */
+    private suspend fun enrichSquad(tla: String, squad: List<Player>): List<Player> {
+        val lineup = runCatching { fifaMatch.teamLineup(tla) }.getOrDefault(emptyList())
+        if (lineup.isEmpty()) return squad
+        val stats = runCatching { fifa.statsById() }.getOrDefault(emptyMap())
+        val byExact = lineup.associateBy { norm(it.name) }
+        val byLast = lineup.associateBy { norm(it.name).substringAfterLast(' ') }
+        return squad.map { p ->
+            val li = byExact[norm(p.name)] ?: byLast[norm(p.name).substringAfterLast(' ')] ?: return@map p
+            val s = stats[li.fifaId]
+            p.copy(
+                captain = li.captain,
+                goals = s?.goals ?: p.goals,
+                assists = s?.assists ?: p.assists
+            )
+        }
     }
 
     override suspend fun player(playerId: Long): Player? {
@@ -90,6 +115,12 @@ class DefaultTeamRepository(
         if (fifaTop.isNotEmpty()) return fifaTop
         return playerDao.topScorers(10).mapIndexed { i, p -> p.toLeader(i + 1, p.goals) }.ifEmpty { MockData.topScorers }
     }
+
+    override suspend fun topYellowCards(): List<Leader> =
+        runCatching { fifa.topYellowCards(10) }.getOrDefault(emptyList())
+
+    override suspend fun topRedCards(): List<Leader> =
+        runCatching { fifa.topRedCards(10) }.getOrDefault(emptyList())
 
     override suspend fun topAssists(): List<Leader> {
         fresh()

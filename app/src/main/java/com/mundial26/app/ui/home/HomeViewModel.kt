@@ -30,6 +30,8 @@ sealed interface HomeUiState {
         val groups: List<Group>,
         val scorers: List<Leader>,
         val assists: List<Leader>,
+        val yellowCards: List<Leader> = emptyList(),
+        val redCards: List<Leader> = emptyList(),
         val news: List<NewsItem>
     ) : HomeUiState
     data class Error(val message: String) : HomeUiState
@@ -108,6 +110,8 @@ class HomeViewModel(
                     groups = groups,
                     scorers = teamRepository.topScorers(),
                     assists = teamRepository.topAssists(),
+                    yellowCards = teamRepository.topYellowCards(),
+                    redCards = teamRepository.topRedCards(),
                     news = newsRepository.news().take(4)
                 )
         } catch (e: Exception) {

@@ -35,6 +35,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mundial26.app.domain.model.Leader
+import com.mundial26.app.ui.components.CardTabIcon
 import com.mundial26.app.ui.components.FlagAvatar
 import com.mundial26.app.ui.theme.MundialTheme
 
@@ -62,8 +63,7 @@ fun LeadersScreen(
             is LeadersUiState.Loading -> LoadingContent()
             is LeadersUiState.Error -> ErrorContent(message = current.message, onRetry = viewModel::retry)
             is LeadersUiState.Success -> LeadersContent(
-                scorers = current.scorers,
-                assists = current.assists,
+                state = current,
                 tab = tab,
                 onSelectTab = viewModel::selectTab
             )
@@ -120,16 +120,29 @@ private fun ErrorContent(message: String, onRetry: () -> Unit, modifier: Modifie
 
 @Composable
 private fun LeadersContent(
-    scorers: List<Leader>,
-    assists: List<Leader>,
+    state: LeadersUiState.Success,
     tab: LeadersTab,
     onSelectTab: (LeadersTab) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val isScorers = tab == LeadersTab.SCORERS
-    val leaders = if (isScorers) scorers else assists
-    val accent = if (isScorers) MundialTheme.colors.brand else MundialTheme.colors.win
-    val unit = if (isScorers) "goles" else "asist."
+    val leaders = when (tab) {
+        LeadersTab.SCORERS -> state.scorers
+        LeadersTab.ASSISTS -> state.assists
+        LeadersTab.YELLOW -> state.yellowCards
+        LeadersTab.RED -> state.redCards
+    }
+    val accent = when (tab) {
+        LeadersTab.SCORERS -> MundialTheme.colors.brand
+        LeadersTab.ASSISTS -> MundialTheme.colors.win
+        LeadersTab.YELLOW -> MundialTheme.colors.yellow
+        LeadersTab.RED -> MundialTheme.colors.live
+    }
+    val unit = when (tab) {
+        LeadersTab.SCORERS -> "goles"
+        LeadersTab.ASSISTS -> "asist."
+        LeadersTab.YELLOW -> "amar."
+        LeadersTab.RED -> "rojas"
+    }
     val maxValue = (leaders.maxOfOrNull { it.value } ?: 1).coerceAtLeast(1)
 
     LazyColumn(
@@ -156,7 +169,6 @@ private fun LeadersContent(
 
 @Composable
 private fun Toggle(tab: LeadersTab, onSelectTab: (LeadersTab) -> Unit, modifier: Modifier = Modifier) {
-    val options = listOf(LeadersTab.SCORERS to "Goleadores", LeadersTab.ASSISTS to "Asistidores")
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -164,23 +176,32 @@ private fun Toggle(tab: LeadersTab, onSelectTab: (LeadersTab) -> Unit, modifier:
             .background(MundialTheme.colors.surface)
             .padding(4.dp)
     ) {
-        options.forEach { (value, label) ->
+        // Goles y Asist. con texto; tarjetas con su icono de color.
+        LeadersTab.entries.forEach { value ->
             val active = value == tab
             Box(
                 modifier = Modifier
-                    .weight(1f)
+                    .weight(if (value == LeadersTab.SCORERS || value == LeadersTab.ASSISTS) 1.4f else 1f)
                     .clip(RoundedCornerShape(10.dp))
                     .background(if (active) MundialTheme.colors.brandDeep else Color.Transparent)
                     .clickable { onSelectTab(value) }
                     .padding(vertical = 10.dp),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = label,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = if (active) Color.White else MundialTheme.colors.textTertiary
-                )
+                when (value) {
+                    LeadersTab.SCORERS, LeadersTab.ASSISTS -> Text(
+                        text = if (value == LeadersTab.SCORERS) "Goles" else "Asist.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = if (active) Color.White else MundialTheme.colors.textTertiary
+                    )
+                    LeadersTab.YELLOW -> CardTabIcon(
+                        color = MundialTheme.colors.yellow.copy(alpha = if (active) 1f else 0.55f)
+                    )
+                    LeadersTab.RED -> CardTabIcon(
+                        color = MundialTheme.colors.live.copy(alpha = if (active) 1f else 0.55f)
+                    )
+                }
             }
         }
     }

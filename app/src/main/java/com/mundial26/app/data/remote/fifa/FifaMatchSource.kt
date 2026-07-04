@@ -230,6 +230,32 @@ fun parseFifaMatchStats(json: String, homeTeamId: String): List<MatchStat> = run
     list
 }.getOrDefault(emptyList())
 
+/** Jugador de una alineación FIFA: id (= key de stats), nombre, capitán y dorsal. */
+data class FifaLineupPlayer(val fifaId: String, val name: String, val captain: Boolean, val shirt: Int?)
+
+/** Extrae la alineación (Players) del equipo con TLA [tla] del detalle live de un partido. */
+fun parseTeamLineup(json: String, tla: String): List<FifaLineupPlayer> = runCatching {
+    val obj = AppJson.parseToJsonElement(json).jsonObject
+    fun team(key: String) = obj[key]?.takeIf { it !is kotlinx.serialization.json.JsonNull }?.jsonObject
+    val home = team("HomeTeam"); val away = team("AwayTeam")
+    fun abbr(o: kotlinx.serialization.json.JsonObject?) =
+        o?.get("Abbreviation")?.takeIf { it !is kotlinx.serialization.json.JsonNull }?.jsonPrimitive?.content
+    val side = when (tla) { abbr(home) -> home; abbr(away) -> away; else -> null } ?: return@runCatching emptyList()
+    side["Players"]?.jsonArray?.mapNotNull { el ->
+        runCatching {
+            val p = el.jsonObject
+            val id = p["IdPlayer"]?.jsonPrimitive?.content ?: return@runCatching null
+            val name = p["PlayerName"]?.jsonArray?.firstOrNull()?.jsonObject?.get("Description")?.jsonPrimitive?.content
+                ?: return@runCatching null
+            FifaLineupPlayer(
+                fifaId = id, name = titleCaseName(name),
+                captain = p["Captain"]?.jsonPrimitive?.content?.toBooleanStrictOrNull() ?: false,
+                shirt = p["ShirtNumber"]?.jsonPrimitive?.content?.toIntOrNull()
+            )
+        }.getOrNull()
+    } ?: emptyList()
+}.getOrDefault(emptyList())
+
 fun parseFifaLive(json: String): List<FifaLiveInfo> =
     AppJson.parseToJsonElement(json).jsonObject["Results"]?.jsonArray?.mapNotNull { el ->
         runCatching {
@@ -323,6 +349,22 @@ class FifaMatchSource(private val client: OkHttpClient = OkHttpClient()) {
         }.getOrDefault(emptyList())
         if (stats.isNotEmpty()) statsCache[ref.idIfes] = System.currentTimeMillis() to stats
         stats
+    }
+
+    private val lineupCache = mutableMapOf<String, List<FifaLineupPlayer>>()
+
+    /** Alineación más reciente del equipo [tla] (capitán, dorsal, id para stats). Cacheada. */
+    suspend fun teamLineup(tla: String): List<FifaLineupPlayer> = withContext(Dispatchers.IO) {
+        lineupCache[tla]?.let { return@withContext it }
+        val ref = calendar()
+            .filter { (it.homeTla == tla || it.awayTla == tla) && it.status != 1 && it.idMatch.isNotBlank() }
+            .maxByOrNull { it.utcDate } ?: return@withContext emptyList()
+        val lineup = runCatching {
+            get("https://api.fifa.com/api/v3/live/football/$COMP/$SEASON/${ref.idStage}/${ref.idMatch}?language=es")
+                ?.let { parseTeamLineup(it, tla) }.orEmpty()
+        }.getOrDefault(emptyList())
+        if (lineup.isNotEmpty()) lineupCache[tla] = lineup
+        lineup
     }
 
     private var liveCache: Pair<Long, List<FifaLiveInfo>>? = null

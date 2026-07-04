@@ -12,11 +12,16 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 /** Sub-vista del ranking de líderes. */
-enum class LeadersTab { SCORERS, ASSISTS }
+enum class LeadersTab { SCORERS, ASSISTS, YELLOW, RED }
 
 sealed interface LeadersUiState {
     data object Loading : LeadersUiState
-    data class Success(val scorers: List<Leader>, val assists: List<Leader>) : LeadersUiState
+    data class Success(
+        val scorers: List<Leader>,
+        val assists: List<Leader>,
+        val yellowCards: List<Leader> = emptyList(),
+        val redCards: List<Leader> = emptyList()
+    ) : LeadersUiState
     data class Error(val message: String) : LeadersUiState
 }
 
@@ -46,7 +51,9 @@ class LeadersViewModel(
             try {
                 _uiState.value = LeadersUiState.Success(
                     scorers = teamRepository.topScorers(),
-                    assists = teamRepository.topAssists()
+                    assists = teamRepository.topAssists(),
+                    yellowCards = teamRepository.topYellowCards(),
+                    redCards = teamRepository.topRedCards()
                 )
             } catch (e: Exception) {
                 _uiState.value = LeadersUiState.Error(e.message ?: "Error al cargar los líderes")

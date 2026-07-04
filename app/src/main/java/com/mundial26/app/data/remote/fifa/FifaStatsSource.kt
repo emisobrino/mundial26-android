@@ -33,6 +33,23 @@ fun parseTopStat(json: String, statName: String, n: Int): List<Pair<String, Int>
 /** Top-N de asistidores: lista de (idJugador, asistencias). */
 fun parseTopAssists(json: String, n: Int): List<Pair<String, Int>> = parseTopStat(json, "Assists", n)
 
+/** Línea de stats de un jugador del torneo. */
+data class PlayerStatLine(val goals: Int, val assists: Int, val yellow: Int, val red: Int)
+
+/** Mapea el players.json completo a idJugador → stats (goles/asistencias/tarjetas). */
+fun parseStatsById(json: String): Map<String, PlayerStatLine> =
+    AppJson.parseToJsonElement(json).jsonObject.mapValues { (_, stats) ->
+        val m = stats.jsonArray.mapNotNull { s ->
+            runCatching {
+                s.jsonArray[0].jsonPrimitive.content to (s.jsonArray[1].jsonPrimitive.content.toDoubleOrNull()?.toInt() ?: 0)
+            }.getOrNull()
+        }.toMap()
+        PlayerStatLine(
+            goals = m["Goals"] ?: 0, assists = m["Assists"] ?: 0,
+            yellow = m["YellowCards"] ?: 0, red = m["RedCards"] ?: 0
+        )
+    }
+
 /** Nombre y país (TLA) de un jugador desde /api/v3/players/{id}. */
 data class FifaPlayerRef(val name: String, val country: String)
 
@@ -139,9 +156,27 @@ class FifaStatsSource(private val client: OkHttpClient = OkHttpClient()) {
         profile
     }
 
+    private var statsByIdCache: Pair<Long, Map<String, PlayerStatLine>>? = null
+
+    /** idJugador FIFA → stats del torneo (una request, cacheada 6 h). Vacío si falla. */
+    suspend fun statsById(): Map<String, PlayerStatLine> = withContext(Dispatchers.IO) {
+        statsByIdCache?.let { (at, m) -> if (System.currentTimeMillis() - at < ttlMs) return@withContext m }
+        val result = runCatching {
+            get("https://fdh-api.fifa.com/v1/stats/season/$SEASON_2026/players.json")?.let(::parseStatsById).orEmpty()
+        }.getOrDefault(emptyMap())
+        if (result.isNotEmpty()) statsByIdCache = System.currentTimeMillis() to result
+        result
+    }
+
     /** Top-N goleadores oficiales de FIFA; lista vacía si la red falla (el repo degrada a otra fuente). */
     suspend fun topScorers(n: Int = 10): List<Leader> = topLeaders("Goals", n)
 
     /** Top-N asistidores oficiales de FIFA; lista vacía si la red falla (el repo degrada a otra fuente). */
     suspend fun topAssists(n: Int = 10): List<Leader> = topLeaders("Assists", n)
+
+    /** Top-N amonestados (tarjetas amarillas) oficiales de FIFA. */
+    suspend fun topYellowCards(n: Int = 10): List<Leader> = topLeaders("YellowCards", n)
+
+    /** Top-N expulsados (tarjetas rojas) oficiales de FIFA. */
+    suspend fun topRedCards(n: Int = 10): List<Leader> = topLeaders("RedCards", n)
 }

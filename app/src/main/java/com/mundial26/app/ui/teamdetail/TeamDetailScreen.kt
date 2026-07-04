@@ -38,6 +38,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mundial26.app.data.mock.FakeTeamRepository
@@ -245,12 +246,18 @@ private fun SquadPlayerRow(player: Player, onClick: () -> Unit, modifier: Modifi
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = player.name,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Medium,
-                color = MundialTheme.colors.textPrimary
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = player.name,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium,
+                    color = MundialTheme.colors.textPrimary
+                )
+                if (player.captain) {
+                    Spacer(modifier = Modifier.width(6.dp))
+                    CaptainBadge()
+                }
+            }
             if (player.age > 0) {
                 Text(
                     text = "${player.age} años",
@@ -266,6 +273,25 @@ private fun SquadPlayerRow(player: Player, onClick: () -> Unit, modifier: Modifi
         if (player.assists > 0) {
             StatChip(text = "${player.assists} A", tint = MundialTheme.colors.brand)
         }
+    }
+}
+
+/** Distintivo "C" de capitán: círculo con la franja del torneo (azul identidad). */
+@Composable
+private fun CaptainBadge(modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier
+            .size(16.dp)
+            .clip(CircleShape)
+            .background(MundialTheme.colors.brandDeep),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = "C",
+            style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+            fontWeight = FontWeight.Black,
+            color = Color.White
+        )
     }
 }
 

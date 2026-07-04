@@ -23,6 +23,10 @@ interface TeamRepository {
     suspend fun playerClub(playerId: Long): PlayerClubInfo? = null
     suspend fun topScorers(): List<Leader>
     suspend fun topAssists(): List<Leader>
+    /** Ranking de tarjetas amarillas del torneo (FIFA); vacío si no hay fuente. */
+    suspend fun topYellowCards(): List<Leader> = emptyList()
+    /** Ranking de tarjetas rojas del torneo (FIFA); vacío si no hay fuente. */
+    suspend fun topRedCards(): List<Leader> = emptyList()
     /** Fuerza una resincronización (pull-to-refresh), ignorando el TTL. */
     suspend fun refresh() {}
 }
