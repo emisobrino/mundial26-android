@@ -266,13 +266,14 @@ private fun SquadPlayerRow(player: Player, onClick: () -> Unit, modifier: Modifi
                 )
             }
         }
-        // Dos columnas fijas: goles y asistencias siempre en el mismo lugar.
-        Box(modifier = Modifier.width(34.dp), contentAlignment = Alignment.CenterEnd) {
-            if (player.goals > 0) StatChip(text = "${player.goals} G", tint = MundialTheme.colors.win)
+        // Chips pegados a la derecha: si tiene uno solo (G o A) queda en la misma
+        // posición para todos; si tiene ambos, van juntos.
+        if (player.goals > 0) {
+            StatChip(text = "${player.goals} G", tint = MundialTheme.colors.win)
+            if (player.assists > 0) Spacer(modifier = Modifier.width(6.dp))
         }
-        Spacer(modifier = Modifier.width(6.dp))
-        Box(modifier = Modifier.width(34.dp), contentAlignment = Alignment.CenterEnd) {
-            if (player.assists > 0) StatChip(text = "${player.assists} A", tint = MundialTheme.colors.brand)
+        if (player.assists > 0) {
+            StatChip(text = "${player.assists} A", tint = MundialTheme.colors.brand)
         }
     }
 }
