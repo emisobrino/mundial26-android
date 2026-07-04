@@ -156,7 +156,7 @@ private fun PlayerHero(
                     modifier = Modifier
                         .size(72.dp)
                         .clip(RoundedCornerShape(16.dp))
-                        .background(MundialTheme.colors.brand),
+                        .background(MundialTheme.colors.brandDeep),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
@@ -237,7 +237,7 @@ private fun TricolorStripe(modifier: Modifier = Modifier) {
     ) {
         Box(modifier = Modifier.weight(1f).fillMaxSize().background(MundialTheme.colors.win))
         Box(modifier = Modifier.weight(1f).fillMaxSize().background(MundialTheme.colors.live))
-        Box(modifier = Modifier.weight(1f).fillMaxSize().background(MundialTheme.colors.brand))
+        Box(modifier = Modifier.weight(1f).fillMaxSize().background(MundialTheme.colors.brandDeep))
     }
 }
 

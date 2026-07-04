@@ -170,7 +170,7 @@ private fun Toggle(tab: LeadersTab, onSelectTab: (LeadersTab) -> Unit, modifier:
                 modifier = Modifier
                     .weight(1f)
                     .clip(RoundedCornerShape(10.dp))
-                    .background(if (active) MundialTheme.colors.brand else Color.Transparent)
+                    .background(if (active) MundialTheme.colors.brandDeep else Color.Transparent)
                     .clickable { onSelectTab(value) }
                     .padding(vertical = 10.dp),
                 contentAlignment = Alignment.Center

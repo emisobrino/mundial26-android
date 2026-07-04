@@ -127,7 +127,7 @@ private fun StatusLabel(match: Match, alignEnd: Boolean = false) {
                 textAlign = textAlign
             )
             Text(
-                text = match.day ?: match.group,
+                text = match.day?.let(::shortDay) ?: match.group,
                 style = MaterialTheme.typography.labelSmall,
                 color = MundialTheme.colors.textTertiary,
                 textAlign = textAlign
@@ -269,6 +269,14 @@ private fun TeamLine(name: String, iso: String, code: String, dim: Boolean = fal
         )
     }
 }
+
+private val DIAS_CORTOS = arrayOf("Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom")
+
+/** "2026-07-04" → "Vie 4/7"; si no parsea, el texto original. */
+private fun shortDay(day: String): String = runCatching {
+    val d = java.time.LocalDate.parse(day)
+    "${DIAS_CORTOS[d.dayOfWeek.value - 1]} ${d.dayOfMonth}/${d.monthValue}"
+}.getOrDefault(day)
 
 // Los nombres completos no están en el modelo Match (solo códigos); se resuelven
 // contra la tabla de referencia de naciones del dominio, con fallback al código.

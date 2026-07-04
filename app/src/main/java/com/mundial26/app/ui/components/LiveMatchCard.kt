@@ -1,5 +1,13 @@
 package com.mundial26.app.ui.components
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -48,7 +56,7 @@ fun LiveMatchCard(
         Row(modifier = Modifier.fillMaxWidth().height(4.dp)) {
             Box(modifier = Modifier.weight(1f).fillMaxHeight().background(MundialTheme.colors.win))
             Box(modifier = Modifier.weight(1f).fillMaxHeight().background(MundialTheme.colors.live))
-            Box(modifier = Modifier.weight(1f).fillMaxHeight().background(MundialTheme.colors.brand))
+            Box(modifier = Modifier.weight(1f).fillMaxHeight().background(MundialTheme.colors.brandDeep))
         }
 
         Column(modifier = Modifier.padding(16.dp)) {
@@ -69,42 +77,53 @@ fun LiveMatchCard(
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.widthIn(min = 56.dp)
-                ) {
-                    FlagAvatar(iso = match.flagA, code = match.teamA, size = 40.dp)
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Text(
-                        text = match.teamA,
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
+                // Tres tercios iguales → el marcador queda en el centro geométrico.
+                Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        FlagAvatar(iso = match.flagA, code = match.teamA, size = 44.dp)
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = match.teamA,
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                    }
                 }
 
-                Text(
-                    text = "${match.scoreA ?: 0} - ${match.scoreB ?: 0}",
-                    style = ScoreboardCard,
-                    color = Color.White,
-                    textAlign = TextAlign.Center
-                )
+                Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                    // ¡Gol!: el marcador nuevo entra rodando desde abajo (250 ms, ease-out).
+                    AnimatedContent(
+                        targetState = "${match.scoreA ?: 0} - ${match.scoreB ?: 0}",
+                        transitionSpec = {
+                            (slideInVertically(animationSpec = tween(250, easing = FastOutSlowInEasing)) { it / 2 } +
+                                fadeIn(tween(250))) togetherWith
+                                (slideOutVertically(animationSpec = tween(180)) { -it / 2 } + fadeOut(tween(180)))
+                        },
+                        label = "score"
+                    ) { score ->
+                        Text(
+                            text = score,
+                            style = ScoreboardCard,
+                            color = Color.White,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
 
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.widthIn(min = 56.dp)
-                ) {
-                    FlagAvatar(iso = match.flagB, code = match.teamB, size = 40.dp)
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Text(
-                        text = match.teamB,
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
+                Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        FlagAvatar(iso = match.flagB, code = match.teamB, size = 44.dp)
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = match.teamB,
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                    }
                 }
             }
 

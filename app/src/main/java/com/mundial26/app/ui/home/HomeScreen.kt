@@ -154,22 +154,21 @@ private fun HomeContent(
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(vertical = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(20.dp)
+        verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
         item {
             HomeHeader(modifier = Modifier.padding(horizontal = 16.dp))
         }
 
-        item {
-            SectionHeader(
-                title = "En vivo",
-                actionText = "Ver todo",
-                onAction = { onNavigateToTab(TopDestination.MATCHES.route) },
-                modifier = Modifier.padding(horizontal = 16.dp)
-            )
-        }
-
         if (state.live.isNotEmpty()) {
+            item {
+                SectionHeader(
+                    title = "En vivo",
+                    actionText = "Ver todo",
+                    onAction = { onNavigateToTab(TopDestination.MATCHES.route) },
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                )
+            }
             item {
                 // A ancho completo; si hay varios en vivo se recorren con swipe.
                 val livePager = rememberPagerState { state.live.size }
@@ -348,7 +347,7 @@ private fun FeaturedTeamCard(
         Row(modifier = Modifier.fillMaxWidth().height(4.dp)) {
             Box(modifier = Modifier.weight(1f).fillMaxSize().background(MundialTheme.colors.win))
             Box(modifier = Modifier.weight(1f).fillMaxSize().background(MundialTheme.colors.live))
-            Box(modifier = Modifier.weight(1f).fillMaxSize().background(MundialTheme.colors.brand))
+            Box(modifier = Modifier.weight(1f).fillMaxSize().background(MundialTheme.colors.brandDeep))
         }
         Row(
             modifier = Modifier

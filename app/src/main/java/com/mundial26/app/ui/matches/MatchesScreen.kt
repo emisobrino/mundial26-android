@@ -189,19 +189,31 @@ private fun MatchesListContent(
         if (state.live.isNotEmpty()) {
             item { SectionLabel(text = "En vivo") }
             items(state.live, key = { "live-${it.id}" }) { match ->
-                MatchRow(match = match, useFullNames = true, liveBorder = true, onClick = { onMatchClick(match.id) })
+                MatchRow(
+                    match = match, useFullNames = true, liveBorder = true,
+                    onClick = { onMatchClick(match.id) },
+                    modifier = Modifier.animateItem()
+                )
             }
         }
         if (state.upcoming.isNotEmpty()) {
             item { SectionLabel(text = "Próximos", modifier = Modifier.padding(top = 6.dp)) }
             items(state.upcoming, key = { "upcoming-${it.id}" }) { match ->
-                MatchRow(match = match, useFullNames = true, onClick = { onMatchClick(match.id) })
+                MatchRow(
+                    match = match, useFullNames = true,
+                    onClick = { onMatchClick(match.id) },
+                    modifier = Modifier.animateItem()
+                )
             }
         }
         if (state.finished.isNotEmpty()) {
             item { SectionLabel(text = "Finalizados", modifier = Modifier.padding(top = 6.dp)) }
             items(state.finished, key = { "finished-${it.id}" }) { match ->
-                MatchRow(match = match, useFullNames = true, onClick = { onMatchClick(match.id) })
+                MatchRow(
+                    match = match, useFullNames = true,
+                    onClick = { onMatchClick(match.id) },
+                    modifier = Modifier.animateItem()
+                )
             }
         }
     }

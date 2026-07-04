@@ -41,7 +41,7 @@ val MundialTypography = Typography(
     headlineSmall = TextStyle(
         fontFamily = Archivo,
         fontWeight = FontWeight(900),
-        fontSize = 24.sp,
+        fontSize = 28.sp,
         letterSpacing = (-0.6).sp
     ),
     titleLarge = TextStyle(
@@ -93,11 +93,12 @@ val ScoreboardBig = TextStyle(
     letterSpacing = (-2).sp
 )
 
-/** Marcador de tarjeta "en vivo" en Inicio: 30sp / 900. */
+/** Marcador de tarjeta "en vivo" en Inicio: 52sp / 900 (el marcador manda). */
 val ScoreboardCard = TextStyle(
     fontFamily = Archivo,
     fontWeight = FontWeight(900),
-    fontSize = 30.sp
+    fontSize = 52.sp,
+    letterSpacing = (-2).sp
 )
 
 /** Micro-label (badges, sellos pequeños): 9sp / 700. */

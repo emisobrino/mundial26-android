@@ -36,12 +36,13 @@ class MatchDetailViewModel(
 
     init {
         load()
-        // Partido en juego: refresca en silencio cada 60 s (minuto, marcador, stats y eventos).
+        // Partido en juego: refresca en silencio cada 30 s (minuto, marcador, stats y eventos).
         viewModelScope.launch {
             while (true) {
-                delay(60_000)
+                delay(30_000)
                 val current = _uiState.value
-                if (current is MatchDetailUiState.Success && current.match.status == MatchStatus.LIVE) {
+                // En vivo o por empezar (para captar el arranque): refrescar en silencio.
+                if (current is MatchDetailUiState.Success && current.match.status != MatchStatus.FINISHED) {
                     runCatching { buildState() }.getOrNull()?.let { _uiState.value = it }
                 }
             }
