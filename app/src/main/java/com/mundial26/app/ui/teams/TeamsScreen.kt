@@ -37,6 +37,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.mundial26.app.domain.model.Nations
 import com.mundial26.app.domain.model.Team
 import com.mundial26.app.ui.components.FlagAvatar
 import com.mundial26.app.ui.components.SegmentedControl
@@ -273,7 +274,7 @@ private fun TeamCard(team: Team, onClick: () -> Unit, modifier: Modifier = Modif
         }
         Spacer(modifier = Modifier.height(10.dp))
         Text(
-            text = team.name,
+            text = Nations.name(team.code),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
             color = MundialTheme.colors.textPrimary
