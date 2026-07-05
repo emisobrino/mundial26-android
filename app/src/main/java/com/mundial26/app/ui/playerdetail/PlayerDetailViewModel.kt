@@ -35,6 +35,7 @@ sealed interface PlayerDetailUiState {
         val rating: Double,       // 0.0 = sin dato → oculto
         val club: String,         // "" = oculto
         val marketValue: String,  // "" = oculto
+        val isStar: Boolean = false,   // true = estrella editorial (ficha adaptativa); false = plantel (ficha unificada)
         // Perfil FIFA (jugadores del plantel; null = sin dato → oculto)
         val caps: Int? = null,
         val intlGoals: Int? = null,
@@ -88,7 +89,8 @@ class PlayerDetailViewModel private constructor(
             teamName = team.name, teamFlag = team.flag,
             goals = st.stats.goals, assists = st.stats.assists, age = st.stats.age,
             yellow = squadMatch?.yellow ?: 0, red = squadMatch?.red ?: 0,
-            rating = st.stats.rating, club = st.stats.club, marketValue = st.stats.marketValue
+            rating = st.stats.rating, club = st.stats.club, marketValue = st.stats.marketValue,
+            isStar = true
         )
     }
 

@@ -379,18 +379,35 @@ private fun NoteSection(note: String, modifier: Modifier = Modifier) {
 
 @Composable
 private fun FichaSection(state: PlayerDetailUiState.Success, modifier: Modifier = Modifier) {
-    val rows = buildList {
-        if (state.club.isNotBlank()) add("Club" to state.club)
-        if (state.marketValue.isNotBlank()) add("Valor" to state.marketValue)
-        // Perfil FIFA (jugadores del plantel)
-        state.caps?.takeIf { it > 0 }?.let { add("Partidos con la selección" to "$it") }
-        state.intlGoals?.takeIf { it > 0 }?.let { add("Goles con la selección" to "$it") }
-        state.heightCm?.takeIf { it > 0 }?.let { add("Altura" to "%.2f m".format(it / 100.0)) }
-        state.weightKg?.takeIf { it > 0 }?.let { add("Peso" to "$it kg") }
-        when (state.preferredFoot) {
-            1 -> add("Pie hábil" to "Derecho")
-            2 -> add("Pie hábil" to "Izquierdo")
+    val rows = if (state.isStar) {
+        // Estrella: ficha adaptativa (solo lo que hay).
+        buildList {
+            if (state.club.isNotBlank()) add("Club" to state.club)
+            if (state.marketValue.isNotBlank()) add("Valor" to state.marketValue)
+            state.caps?.takeIf { it > 0 }?.let { add("Partidos con la selección" to "$it") }
+            state.intlGoals?.takeIf { it > 0 }?.let { add("Goles con la selección" to "$it") }
+            state.heightCm?.takeIf { it > 0 }?.let { add("Altura" to "%.2f m".format(it / 100.0)) }
+            state.weightKg?.takeIf { it > 0 }?.let { add("Peso" to "$it kg") }
+            when (state.preferredFoot) {
+                1 -> add("Pie hábil" to "Derecho")
+                2 -> add("Pie hábil" to "Izquierdo")
+            }
         }
+    } else {
+        // Plantel: ficha unificada, siempre las mismas filas ("—" cuando no hay dato).
+        val dash = "—"
+        listOf(
+            "Club" to state.club.ifBlank { dash },
+            "Partidos con la selección" to (state.caps?.toString() ?: dash),
+            "Goles con la selección" to (state.intlGoals?.toString() ?: dash),
+            "Altura" to (state.heightCm?.takeIf { it > 0 }?.let { "%.2f m".format(it / 100.0) } ?: dash),
+            "Peso" to (state.weightKg?.takeIf { it > 0 }?.let { "$it kg" } ?: dash),
+            "Pie hábil" to when (state.preferredFoot) {
+                1 -> "Derecho"
+                2 -> "Izquierdo"
+                else -> dash
+            }
+        )
     }
     if (rows.isEmpty()) return
 
