@@ -60,6 +60,8 @@ class DefaultMatchRepository(
         return copy(
             status = promoted,
             minute = info.minute ?: minute ?: (if (promoted == MatchStatus.LIVE) 1 else null),
+            // Etiqueta oficial de FIFA (frena en el ET, muestra descuento "45+2'").
+            minuteLabel = info.timeLabel.takeIf { it.isNotBlank() },
             scoreA = (if (flipped) info.scoreAway else info.scoreHome) ?: scoreA,
             scoreB = (if (flipped) info.scoreHome else info.scoreAway) ?: scoreB
         )

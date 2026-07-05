@@ -41,7 +41,9 @@ enum class EventKind { GOAL, YELLOW, RED, SUB }
 data class MatchEvent(val min: Int, val kind: EventKind, val side: Char, val player: String) // side 'A'|'B'
 
 data class Match(
-    val id: String, val status: MatchStatus, val minute: Int?, val time: String?,
+    val id: String, val status: MatchStatus, val minute: Int?,
+    val minuteLabel: String? = null,   // etiqueta oficial FIFA: "45+2'", "ET", "90+3'" (frena en cortes)
+    val time: String?,
     val day: String?, val group: String, val stadium: String,
     val teamA: String, val teamB: String,      // códigos (ARG, MEX…)
     val flagA: String, val flagB: String,      // ISO-2

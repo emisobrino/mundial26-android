@@ -88,9 +88,26 @@ private fun subCandidates(placeholder: String, byNumber: Map<Int, FifaMatchRef>,
 data class FifaLiveInfo(
     val homeTla: String, val awayTla: String,
     val minute: Int?, val scoreHome: Int?, val scoreAway: Int?,
-    val status: Int = 1                 // 3 = en juego, 0 = terminado, 1 = por empezar
+    val status: Int = 1,                // 3 = en juego, 0 = terminado, 1 = por empezar
+    val period: Int = 0,                // 3=1erT, 4=ET, 5=2doT, 10=fin, 11/13=alargue, 12=descanso alargue
+    val timeLabel: String = ""          // "45+2'", "ET", "90+3'" (frena en cortes)
 ) {
     val inPlay: Boolean get() = status == 3
+}
+
+/**
+ * Etiqueta de tiempo en vivo a partir del período y el MatchTime oficial de FIFA.
+ * FIFA ya congela el MatchTime en los cortes, así que solo hay que rotular los
+ * descansos y normalizar el descuento ("45'+2'" → "45+2'").
+ */
+fun fifaLiveLabel(period: Int, matchTime: String?): String {
+    val t = (matchTime ?: "").replace("'+", "+")   // "45'+2'" → "45+2'"
+    return when (period) {
+        4 -> "ET"           // entretiempo
+        12 -> "Descanso"    // descanso del alargue
+        14, 15 -> "Penales"
+        else -> t
+    }
 }
 
 /**
@@ -115,6 +132,7 @@ fun parseFifaMinute(raw: String?): Int? {
 fun extractEventPlayer(type: Int, desc: String): String {
     val rx = when (type) {
         0 -> Regex("de (.+?) \\(")                                    // ¡Goool de Julian QUINONES (México)!
+        41, 34 -> Regex("¡(.+?) \\(")                                 // ¡Breel EMBOLO (Suiza) convierte el penal! / anota en propia meta.
         2 -> Regex("amonesta a (.+?) \\(")                            // El árbitro amonesta a X (Equipo).
         3 -> Regex("expulsión de (.+?) \\(")                          // ¡Tarjeta roja y expulsión de X (Equipo)!
         5 -> Regex("Cambio: (.+?) entra en lugar de (.+?) \\(")        // Cambio: X entra en lugar de Y (Equipo)
@@ -164,7 +182,7 @@ fun parseFifaTimeline(json: String, homeTeamId: String): List<MatchEvent> =
         runCatching {
             val e = el.jsonObject
             val kind = when (e["Type"]?.jsonPrimitive?.content?.toIntOrNull()) {
-                0 -> EventKind.GOAL
+                0, 34, 41 -> EventKind.GOAL   // gol normal, en propia puerta, de penal
                 2 -> EventKind.YELLOW
                 3 -> EventKind.RED
                 5 -> EventKind.SUB
@@ -265,11 +283,14 @@ fun parseFifaLive(json: String): List<FifaLiveInfo> =
             val away = team("AwayTeam") ?: return@runCatching null
             fun str(o: Map<String, kotlinx.serialization.json.JsonElement>, k: String) =
                 o[k]?.takeIf { it !is kotlinx.serialization.json.JsonNull }?.jsonPrimitive?.content
+            val period = str(m, "Period")?.toIntOrNull() ?: 0
+            val matchTime = str(m, "MatchTime")
             FifaLiveInfo(
                 homeTla = str(home, "Abbreviation") ?: "", awayTla = str(away, "Abbreviation") ?: "",
-                minute = parseFifaMinute(str(m, "MatchTime")),
+                minute = parseFifaMinute(matchTime),
                 scoreHome = str(home, "Score")?.toIntOrNull(), scoreAway = str(away, "Score")?.toIntOrNull(),
-                status = str(m, "MatchStatus")?.toIntOrNull() ?: 1
+                status = str(m, "MatchStatus")?.toIntOrNull() ?: 1,
+                period = period, timeLabel = fifaLiveLabel(period, matchTime)
             )
         }.getOrNull()
     } ?: emptyList()

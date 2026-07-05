@@ -70,7 +70,7 @@ fun LiveMatchCard(
                     style = MaterialTheme.typography.labelLarge,
                     color = Color.White.copy(alpha = 0.5f)
                 )
-                LiveMinutePill(minute = match.minute)
+                LiveMinutePill(label = liveMinuteText(match.minuteLabel, match.minute))
             }
 
             Spacer(modifier = Modifier.height(16.dp))
