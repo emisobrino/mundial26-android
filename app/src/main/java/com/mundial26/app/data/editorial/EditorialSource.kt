@@ -368,6 +368,19 @@ object EditorialSource {
         AssistLeader("Martin Ødegaard", "NOR", 3),
         AssistLeader("Roberto Alvarado", "MEX", 3),
     )
+
+    /**
+     * Lesionados curados por selección (TLA → apellidos, sin acentos, en minúsculas).
+     * Ninguna API gratis da el parte médico, así que se mantiene a mano: editá este mapa
+     * tras cada fecha. El plantel marca `injured = true` si el apellido del jugador aparece acá.
+     */
+    val injuredByCode: Map<String, Set<String>> = mapOf(
+        "ARG" to setOf("lo celso"),
+        "FRA" to setOf("dembele"),
+    )
+
+    /** Apellidos lesionados de una selección (vacío si no hay datos). */
+    fun injured(tla: String): Set<String> = injuredByCode[tla.uppercase()] ?: emptySet()
 }
 
 /** Fila curada del ranking de asistidores (nombre + selección TLA + asistencias). */
