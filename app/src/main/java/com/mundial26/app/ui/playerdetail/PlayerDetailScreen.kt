@@ -241,14 +241,19 @@ private fun TricolorStripe(modifier: Modifier = Modifier) {
     }
 }
 
+private sealed interface StatItem
+private data class ValueStat(val value: String, val label: String) : StatItem
+private data class CardsStat(val yellow: Int, val red: Int) : StatItem
+
 @Composable
 private fun WorldCupStatsSection(state: PlayerDetailUiState.Success, modifier: Modifier = Modifier) {
-    // Tarjetas adaptativas: solo mostramos las métricas con dato real.
-    val cards = buildList {
-        add("${state.goals}" to "Goles")
-        add("${state.assists}" to "Asistencias")
-        if (state.age > 0) add("${state.age}" to "Edad")
-        if (state.rating > 0.0) add("%.1f".format(state.rating) to "Valoración")
+    // Métricas adaptativas; el box de tarjetas va último (abajo a la derecha).
+    val items = buildList {
+        add(ValueStat("${state.goals}", "Goles"))
+        add(ValueStat("${state.assists}", "Asistencias"))
+        if (state.age > 0) add(ValueStat("${state.age}", "Edad"))
+        if (state.rating > 0.0) add(ValueStat("%.1f".format(state.rating), "Valoración"))
+        add(CardsStat(state.yellow, state.red))
     }
 
     Column(modifier = modifier.fillMaxWidth()) {
@@ -258,18 +263,70 @@ private fun WorldCupStatsSection(state: PlayerDetailUiState.Success, modifier: M
             color = MundialTheme.colors.textTertiary
         )
         Spacer(modifier = Modifier.height(12.dp))
-        cards.chunked(2).forEach { row ->
+        items.chunked(2).forEach { row ->
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                row.forEach { (value, label) ->
-                    StatCard(value = value, label = label, modifier = Modifier.weight(1f))
+                row.forEach { item ->
+                    when (item) {
+                        is ValueStat -> StatCard(value = item.value, label = item.label, modifier = Modifier.weight(1f))
+                        is CardsStat -> CardsStatCard(yellow = item.yellow, red = item.red, modifier = Modifier.weight(1f))
+                    }
                 }
                 if (row.size == 1) Spacer(modifier = Modifier.weight(1f))
             }
             Spacer(modifier = Modifier.height(12.dp))
         }
+    }
+}
+
+/** Box de tarjetas del torneo: icono amarillo + nº y icono rojo + nº. */
+@Composable
+private fun CardsStatCard(yellow: Int, red: Int, modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier
+            .clip(MundialTheme.shapes.medium)
+            .background(MundialTheme.colors.surface)
+            .padding(vertical = 18.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            CardCount(color = MundialTheme.colors.yellow, count = yellow)
+            CardCount(color = MundialTheme.colors.live, count = red)
+        }
+        Spacer(modifier = Modifier.height(6.dp))
+        Text(
+            text = "Tarjetas",
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Bold,
+            color = MundialTheme.colors.textTertiary
+        )
+    }
+}
+
+@Composable
+private fun CardCount(color: Color, count: Int, modifier: Modifier = Modifier) {
+    Row(
+        modifier = modifier,
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(width = 15.dp, height = 20.dp)
+                .clip(RoundedCornerShape(3.dp))
+                .background(color)
+        )
+        Text(
+            text = "$count",
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Black,
+            color = MundialTheme.colors.textPrimary
+        )
     }
 }
 

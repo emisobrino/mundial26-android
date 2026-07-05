@@ -93,7 +93,9 @@ class DefaultTeamRepository(
             p.copy(
                 captain = li.captain,
                 goals = s?.goals ?: p.goals,
-                assists = s?.assists ?: p.assists
+                assists = s?.assists ?: p.assists,
+                yellow = s?.yellow ?: p.yellow,
+                red = s?.red ?: p.red
             )
         }
     }
