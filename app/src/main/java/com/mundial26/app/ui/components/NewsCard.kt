@@ -19,9 +19,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
 import com.mundial26.app.data.mock.MockData
 import com.mundial26.app.domain.model.NewsItem
 import com.mundial26.app.ui.theme.MicroLabel
@@ -51,6 +53,16 @@ fun NewsCardLarge(
                 .background(Color(item.colorHex).copy(alpha = 0.16f)),
             contentAlignment = Alignment.BottomStart
         ) {
+            if (item.imageUrl.isNotBlank()) {
+                AsyncImage(
+                    model = item.imageUrl,
+                    contentDescription = item.tag,
+                    contentScale = ContentScale.Fit,
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .size(52.dp)
+                )
+            }
             CategoryBadge(
                 tag = item.tag,
                 colorHex = item.colorHex,
@@ -103,8 +115,18 @@ fun NewsCardCompact(
             modifier = Modifier
                 .size(64.dp)
                 .clip(RoundedCornerShape(12.dp))
-                .background(Color(item.colorHex).copy(alpha = 0.16f))
-        )
+                .background(Color(item.colorHex).copy(alpha = 0.16f)),
+            contentAlignment = Alignment.Center
+        ) {
+            if (item.imageUrl.isNotBlank()) {
+                AsyncImage(
+                    model = item.imageUrl,
+                    contentDescription = item.tag,
+                    contentScale = ContentScale.Fit,
+                    modifier = Modifier.size(40.dp)
+                )
+            }
+        }
         Spacer(modifier = Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
             CategoryBadge(tag = item.tag, colorHex = item.colorHex)
