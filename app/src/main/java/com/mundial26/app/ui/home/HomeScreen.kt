@@ -47,6 +47,7 @@ import com.mundial26.app.ui.components.MatchRow
 import com.mundial26.app.ui.components.NewsCardCompact
 import com.mundial26.app.ui.components.SectionHeader
 import com.mundial26.app.ui.components.StandingsTable
+import com.mundial26.app.ui.components.bestThirdCodes
 import com.mundial26.app.ui.components.TournamentLeadersCard
 import com.mundial26.app.ui.components.BrandLogo26
 import com.mundial26.app.ui.navigation.TopDestination
@@ -240,10 +241,12 @@ private fun HomeContent(
                         actionText = "Ver tabla",
                         onAction = onSeeTable
                     )
+                    val qualifiedThirds = bestThirdCodes(state.groups)
                     HorizontalPager(state = pagerState, pageSpacing = 12.dp) { page ->
                         StandingsTable(
                             group = state.groups[page],
                             compact = true,
+                            qualifiedThirds = qualifiedThirds,
                             onRowClick = { onSeeTable() }
                         )
                     }
