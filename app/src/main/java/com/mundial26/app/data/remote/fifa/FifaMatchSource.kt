@@ -90,24 +90,29 @@ data class FifaLiveInfo(
     val minute: Int?, val scoreHome: Int?, val scoreAway: Int?,
     val status: Int = 1,                // 3 = en juego, 0 = terminado, 1 = por empezar
     val period: Int = 0,                // 3=1erT, 4=ET, 5=2doT, 10=fin, 11/13=alargue, 12=descanso alargue
-    val timeLabel: String = ""          // "45+2'", "ET", "90+3'" (frena en cortes)
+    val timeLabel: String = "",         // base: "45'", "ET", "90'" (frena en cortes)
+    val addedLabel: String? = null      // descuento actual: "+2" (globo azul), null si no hay
 ) {
     val inPlay: Boolean get() = status == 3
 }
 
 /**
- * Etiqueta de tiempo en vivo a partir del período y el MatchTime oficial de FIFA.
- * FIFA ya congela el MatchTime en los cortes, así que solo hay que rotular los
- * descansos y normalizar el descuento ("45'+2'" → "45+2'").
+ * Etiqueta BASE de tiempo en vivo (globo rojo) a partir del período y el MatchTime
+ * oficial de FIFA. FIFA congela el MatchTime en los cortes, solo hay que rotular
+ * los descansos y quitar el descuento (que va en el globo azul aparte).
  */
-fun fifaLiveLabel(period: Int, matchTime: String?): String {
-    val t = (matchTime ?: "").replace("'+", "+")   // "45'+2'" → "45+2'"
-    return when (period) {
-        4 -> "ET"           // entretiempo
-        12 -> "Descanso"    // descanso del alargue
-        14, 15 -> "Penales"
-        else -> t
-    }
+fun fifaLiveLabel(period: Int, matchTime: String?): String = when (period) {
+    4 -> "ET"           // entretiempo
+    12 -> "Descanso"    // descanso del alargue
+    14, 15 -> "Penales"
+    else -> (matchTime ?: "").substringBefore("+").trim()   // "45'+2'" → "45'"
+}
+
+/** Descuento del tiempo actual (globo azul): "45'+2'" → "+2"; sin descuento → null. */
+fun fifaAddedLabel(period: Int, matchTime: String?): String? {
+    if (period == 4 || period == 12 || period == 14 || period == 15) return null
+    val extra = Regex("\\+(\\d+)'?").find(matchTime ?: "")?.groupValues?.get(1) ?: return null
+    return "+$extra"
 }
 
 /**
@@ -290,7 +295,8 @@ fun parseFifaLive(json: String): List<FifaLiveInfo> =
                 minute = parseFifaMinute(matchTime),
                 scoreHome = str(home, "Score")?.toIntOrNull(), scoreAway = str(away, "Score")?.toIntOrNull(),
                 status = str(m, "MatchStatus")?.toIntOrNull() ?: 1,
-                period = period, timeLabel = fifaLiveLabel(period, matchTime)
+                period = period, timeLabel = fifaLiveLabel(period, matchTime),
+                addedLabel = fifaAddedLabel(period, matchTime)
             )
         }.getOrNull()
     } ?: emptyList()

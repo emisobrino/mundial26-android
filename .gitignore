@@ -13,3 +13,4 @@
 tools/*.class
 tools/shot-*.png
 tools/playstore-512.png
+.playwright-mcp/

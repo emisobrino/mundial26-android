@@ -9,7 +9,9 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -26,15 +28,37 @@ import androidx.compose.ui.unit.sp
 import com.mundial26.app.ui.theme.MundialTheme
 
 /**
- * Píldora roja con el tiempo en juego. Recibe la etiqueta ya formateada
- * ("63'", "45+2'", "ET"); el valor nuevo entra rodando desde abajo.
+ * Fila de tiempo en vivo: globo rojo con el minuto ("63'", "ET") y, si hay
+ * descuento, un globo azul con el añadido ("+2") al lado.
  */
 @Composable
-fun LiveMinutePill(label: String, modifier: Modifier = Modifier) {
+fun LiveMinuteRow(label: String, added: String? = null, modifier: Modifier = Modifier) {
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        LiveMinutePill(label = label)
+        if (!added.isNullOrBlank()) {
+            LiveMinutePill(label = added, containerColor = MundialTheme.colors.brandDeep)
+        }
+    }
+}
+
+/**
+ * Píldora del tiempo en juego. Roja por defecto (minuto); azul para el descuento.
+ * El valor nuevo entra rodando desde abajo.
+ */
+@Composable
+fun LiveMinutePill(
+    label: String,
+    modifier: Modifier = Modifier,
+    containerColor: Color = MundialTheme.colors.live
+) {
     Box(
         modifier = modifier
             .clip(RoundedCornerShape(20.dp))
-            .background(MundialTheme.colors.live)
+            .background(containerColor)
             .padding(horizontal = 12.dp, vertical = 5.dp),
         contentAlignment = Alignment.Center
     ) {
