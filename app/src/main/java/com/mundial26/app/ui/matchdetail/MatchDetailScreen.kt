@@ -10,6 +10,7 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -30,6 +31,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.outlined.SportsSoccer
@@ -48,6 +50,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -60,8 +63,10 @@ import com.mundial26.app.domain.model.Match
 import com.mundial26.app.domain.model.MatchEvent
 import com.mundial26.app.domain.model.MatchStat
 import com.mundial26.app.domain.model.MatchStatus
+import com.mundial26.app.domain.model.Nations
 import com.mundial26.app.domain.model.Star
 import com.mundial26.app.domain.model.WinProbability
+import com.mundial26.app.ui.components.MatchHighlights
 import com.mundial26.app.ui.components.FlagAvatar
 import com.mundial26.app.ui.components.LiveMinuteRow
 import com.mundial26.app.ui.components.liveMinuteText
@@ -173,6 +178,9 @@ private fun MatchDetailContent(state: MatchDetailUiState.Success, modifier: Modi
                 item { StarsSection(match = match, homeStar = state.homeStar, awayStar = state.awayStar) }
             }
         }
+        if (match.status == MatchStatus.FINISHED && match.teamA.isNotBlank() && match.teamB.isNotBlank()) {
+            item { HighlightsSection(match = match, videoId = state.highlightVideoId) }
+        }
         if (match.stats.isNotEmpty()) {
             item { StatsSection(stats = match.stats, estimated = match.statsEstimated) }
         }
@@ -190,6 +198,51 @@ private fun prettyDate(day: String?): String = runCatching {
     val d = java.time.LocalDate.parse(day)
     "${DIAS[d.dayOfWeek.value - 1]} ${d.dayOfMonth} de ${MESES[d.monthValue - 1]}"
 }.getOrDefault(day ?: "")
+
+/** Resumen del partido: reproductor de YouTube embebido; si no se encontró, botón a YouTube. */
+@Composable
+private fun HighlightsSection(match: Match, videoId: String?, modifier: Modifier = Modifier) {
+    val uriHandler = LocalUriHandler.current
+    Column(modifier = modifier.fillMaxWidth()) {
+        Text(
+            text = "RESUMEN",
+            style = MaterialTheme.typography.labelLarge,
+            color = MundialTheme.colors.textTertiary
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+        if (videoId != null) {
+            MatchHighlights(videoId = videoId)
+        } else {
+            val query = "${Nations.name(match.teamA)} ${Nations.name(match.teamB)} Mundial 2026 resumen"
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(MundialTheme.shapes.medium)
+                    .background(MundialTheme.colors.surface)
+                    .clickable {
+                        runCatching {
+                            uriHandler.openUri("https://www.youtube.com/results?search_query=" + java.net.URLEncoder.encode(query, "UTF-8"))
+                        }
+                    }
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Ver resumen en YouTube",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MundialTheme.colors.brand,
+                    modifier = Modifier.weight(1f)
+                )
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    contentDescription = null,
+                    tint = MundialTheme.colors.textFaint
+                )
+            }
+        }
+    }
+}
 
 /** Probabilidad de resultado en 90' (estimada por ranking FIFA), estilo panel de Google. */
 @Composable
