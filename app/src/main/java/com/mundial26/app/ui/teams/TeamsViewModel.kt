@@ -4,9 +4,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import com.mundial26.app.domain.model.BracketRound
 import com.mundial26.app.domain.model.Confederation
 import com.mundial26.app.domain.model.Group
 import com.mundial26.app.domain.model.Team
+import com.mundial26.app.domain.repository.MatchRepository
 import com.mundial26.app.domain.repository.TeamRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -14,7 +16,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 /** Sub-vista seleccionada en la pantalla Equipos. */
-enum class TeamsView { LIST, STANDINGS }
+enum class TeamsView { LIST, STANDINGS, BRACKET }
 
 /** Filtro de confederación para la grilla de selecciones. */
 enum class ConfFilter(val label: String, val conf: Confederation?) {
@@ -34,7 +36,8 @@ sealed interface TeamsUiState {
     data object Loading : TeamsUiState
     data class Success(
         val teams: List<Team>,
-        val groups: List<Group>
+        val groups: List<Group>,
+        val bracket: List<BracketRound>
     ) : TeamsUiState
     data class Error(val message: String) : TeamsUiState
 }
@@ -44,7 +47,8 @@ sealed interface TeamsUiState {
  * y maneja la sub-vista activa (Selecciones / Grupos) y el filtro de confederación.
  */
 class TeamsViewModel(
-    private val teamRepository: TeamRepository
+    private val teamRepository: TeamRepository,
+    private val matchRepository: MatchRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<TeamsUiState>(TeamsUiState.Loading)
@@ -110,7 +114,8 @@ class TeamsViewModel(
         try {
             _uiState.value = TeamsUiState.Success(
                 teams = teamRepository.teams().sortedBy { if (it.rank <= 0) Int.MAX_VALUE else it.rank },
-                groups = teamRepository.groups()
+                groups = teamRepository.groups(),
+                bracket = matchRepository.bracket()
             )
         } catch (e: Exception) {
             _uiState.value = TeamsUiState.Error(e.message ?: "Error al cargar Equipos")
@@ -124,9 +129,9 @@ class TeamsViewModel(
          */
         var requestedView: TeamsView? = null
 
-        fun Factory(teamRepository: TeamRepository) = viewModelFactory {
+        fun Factory(teamRepository: TeamRepository, matchRepository: MatchRepository) = viewModelFactory {
             initializer {
-                TeamsViewModel(teamRepository)
+                TeamsViewModel(teamRepository, matchRepository)
             }
         }
     }

@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
-import com.mundial26.app.domain.model.BracketRound
 import com.mundial26.app.domain.model.Match
 import com.mundial26.app.domain.model.MatchStatus
 import com.mundial26.app.domain.repository.MatchRepository
@@ -14,7 +13,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 /** Sub-vista seleccionada en la pantalla Partidos. */
-enum class MatchesView { LIST, CALENDAR, BRACKET }
+enum class MatchesView { LIST, CALENDAR }
 
 /**
  * Estado de UI de la pantalla Partidos.
@@ -25,15 +24,14 @@ sealed interface MatchesUiState {
         val live: List<Match>,
         val upcoming: List<Match>,
         val finished: List<Match>,
-        val byDay: Map<String, List<Match>>,
-        val bracket: List<BracketRound>
+        val byDay: Map<String, List<Match>>
     ) : MatchesUiState
     data class Error(val message: String) : MatchesUiState
 }
 
 /**
- * ViewModel de la pantalla Partidos: agrega datos para las tres sub-vistas
- * (lista Partidos, Calendario, Llaves) y maneja la selección del segmento activo.
+ * ViewModel de la pantalla Partidos: agrega datos para las sub-vistas
+ * (lista Partidos, Calendario) y maneja la selección del segmento activo.
  */
 class MatchesViewModel(
     private val matchRepository: MatchRepository
@@ -100,8 +98,7 @@ class MatchesViewModel(
                     finished = resultsAndUpcoming
                         .filter { it.status == MatchStatus.FINISHED }
                         .sortedByDescending { (it.day ?: "") + (it.time ?: "") },
-                    byDay = matchRepository.byDay(),
-                    bracket = matchRepository.bracket()
+                    byDay = matchRepository.byDay()
                 )
         } catch (e: Exception) {
             // En un refresh silencioso de fondo, un fallo transitorio no debe tapar el contenido.
