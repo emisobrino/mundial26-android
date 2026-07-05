@@ -42,6 +42,7 @@ import com.mundial26.app.domain.model.Team
 import com.mundial26.app.ui.components.FlagAvatar
 import com.mundial26.app.ui.components.SegmentedControl
 import com.mundial26.app.ui.components.StandingsTable
+import com.mundial26.app.ui.components.bestThirdCodes
 import com.mundial26.app.ui.theme.MundialTheme
 
 /**
@@ -334,6 +335,7 @@ private fun StandingsContent(
                 Spacer(modifier = Modifier.height(16.dp))
             }
         }
+        val qualifiedThirds = bestThirdCodes(state.groups)
         lazyColumnItems(state.groups, key = { it.name }) { group ->
             Column {
                 Text(
@@ -343,7 +345,7 @@ private fun StandingsContent(
                     color = MundialTheme.colors.textPrimary,
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
-                StandingsTable(group = group, compact = false, onRowClick = {})
+                StandingsTable(group = group, compact = false, qualifiedThirds = qualifiedThirds, onRowClick = {})
             }
         }
         item {

@@ -38,6 +38,7 @@ fun StandingsTable(
     group: Group,
     compact: Boolean = false,
     modifier: Modifier = Modifier,
+    qualifiedThirds: Set<String> = emptySet(),
     onRowClick: ((GroupRow) -> Unit)? = null
 ) {
     Column(
@@ -48,16 +49,33 @@ fun StandingsTable(
     ) {
         HeaderRow(compact = compact)
         group.rows.forEachIndexed { index, row ->
+            // Clasifican los dos primeros y, además, los mejores terceros del torneo.
+            val classifies = index < 2 || (index == 2 && qualifiedThirds.contains(row.code))
             DataRow(
                 row = row,
                 position = index + 1,
-                classifies = index < 2,
+                classifies = classifies,
                 compact = compact,
                 onClick = onRowClick?.let { { it(row) } }
             )
         }
     }
 }
+
+/**
+ * Códigos de los mejores terceros que clasifican (Mundial 2026: los 8 mejores de los 12
+ * grupos), ordenados por puntos, diferencia de gol y goles a favor.
+ */
+fun bestThirdCodes(groups: List<Group>, count: Int = 8): Set<String> =
+    groups.mapNotNull { it.rows.getOrNull(2) }
+        .sortedWith(
+            compareByDescending<GroupRow> { it.pts }
+                .thenByDescending { it.dg }
+                .thenByDescending { it.gf }
+        )
+        .take(count)
+        .map { it.code }
+        .toSet()
 
 @Composable
 private fun HeaderRow(compact: Boolean) {
