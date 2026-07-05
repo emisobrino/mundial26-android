@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -108,7 +107,7 @@ private fun DataRow(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(enabled = onClick != null) { onClick?.invoke() }
-            .padding(vertical = 10.dp),
+            .padding(end = 12.dp, top = 10.dp, bottom = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Row(
@@ -183,7 +182,7 @@ private fun NumCell(
         color = resolvedColor,
         fontWeight = if (bold) FontWeight.Bold else FontWeight.Normal,
         textAlign = TextAlign.End,
-        modifier = Modifier.widthIn(min = 28.dp)
+        modifier = Modifier.width(32.dp)
     )
 }
 
