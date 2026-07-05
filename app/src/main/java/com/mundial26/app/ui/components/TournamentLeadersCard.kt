@@ -1,5 +1,6 @@
 package com.mundial26.app.ui.components
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -22,11 +23,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.mundial26.app.R
 import com.mundial26.app.data.mock.MockData
 import com.mundial26.app.domain.model.Leader
 import com.mundial26.app.ui.theme.MundialTheme
@@ -110,6 +115,29 @@ fun CardTabIcon(color: Color, modifier: Modifier = Modifier) {
     )
 }
 
+/** Pelota oficial del Mundial (PNG a color) para la pestaña de goles; se atenúa si no está activa. */
+@Composable
+fun BallTabIcon(active: Boolean, modifier: Modifier = Modifier) {
+    Image(
+        painter = painterResource(R.drawable.ic_ball_wc),
+        contentDescription = "Goles",
+        modifier = modifier
+            .size(24.dp)
+            .alpha(if (active) 1f else 0.5f)
+    )
+}
+
+/** Botín de fútbol (silueta PNG) para la pestaña de asistencias; se tiñe con el color dado. */
+@Composable
+fun BootTabIcon(tint: Color, modifier: Modifier = Modifier) {
+    Image(
+        painter = painterResource(R.drawable.ic_boot),
+        contentDescription = "Asistencias",
+        colorFilter = ColorFilter.tint(tint),
+        modifier = modifier.size(28.dp)
+    )
+}
+
 @Composable
 private fun LeadersToggle(
     selected: Int,
@@ -123,12 +151,12 @@ private fun LeadersToggle(
             .background(Color.White.copy(alpha = 0.08f))
             .padding(4.dp)
     ) {
-        // Goles y Asist. con texto; tarjetas con su icono de color.
+        // Goles ⚽, asistencias (botín) y tarjetas amarilla/roja, todo con icono.
         repeat(4) { index ->
             val active = index == selected
             Box(
                 modifier = Modifier
-                    .weight(if (index < 2) 1.4f else 1f)
+                    .weight(1f)
                     .clip(RoundedCornerShape(10.dp))
                     .background(if (active) MundialTheme.colors.brandDeep else Color.Transparent)
                     .clickable { onSelect(index) }
@@ -136,12 +164,8 @@ private fun LeadersToggle(
                 contentAlignment = Alignment.Center
             ) {
                 when (index) {
-                    0, 1 -> Text(
-                        text = if (index == 0) "Goles" else "Asist.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = if (active) Color.White else Color.White.copy(alpha = 0.5f)
-                    )
+                    0 -> BallTabIcon(active = active)
+                    1 -> BootTabIcon(tint = Color.White.copy(alpha = if (active) 1f else 0.5f))
                     2 -> CardTabIcon(color = MundialTheme.colors.yellow.copy(alpha = if (active) 1f else 0.55f))
                     else -> CardTabIcon(color = MundialTheme.colors.live.copy(alpha = if (active) 1f else 0.55f))
                 }

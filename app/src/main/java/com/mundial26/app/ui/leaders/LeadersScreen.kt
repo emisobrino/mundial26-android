@@ -35,6 +35,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mundial26.app.domain.model.Leader
+import com.mundial26.app.ui.components.BallTabIcon
+import com.mundial26.app.ui.components.BootTabIcon
 import com.mundial26.app.ui.components.CardTabIcon
 import com.mundial26.app.ui.components.FlagAvatar
 import com.mundial26.app.ui.theme.MundialTheme
@@ -176,12 +178,12 @@ private fun Toggle(tab: LeadersTab, onSelectTab: (LeadersTab) -> Unit, modifier:
             .background(MundialTheme.colors.surface)
             .padding(4.dp)
     ) {
-        // Goles y Asist. con texto; tarjetas con su icono de color.
+        // Goles ⚽, asistencias (botín) y tarjetas amarilla/roja, todo con icono.
         LeadersTab.entries.forEach { value ->
             val active = value == tab
             Box(
                 modifier = Modifier
-                    .weight(if (value == LeadersTab.SCORERS || value == LeadersTab.ASSISTS) 1.4f else 1f)
+                    .weight(1f)
                     .clip(RoundedCornerShape(10.dp))
                     .background(if (active) MundialTheme.colors.brandDeep else Color.Transparent)
                     .clickable { onSelectTab(value) }
@@ -189,11 +191,9 @@ private fun Toggle(tab: LeadersTab, onSelectTab: (LeadersTab) -> Unit, modifier:
                 contentAlignment = Alignment.Center
             ) {
                 when (value) {
-                    LeadersTab.SCORERS, LeadersTab.ASSISTS -> Text(
-                        text = if (value == LeadersTab.SCORERS) "Goles" else "Asist.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = if (active) Color.White else MundialTheme.colors.textTertiary
+                    LeadersTab.SCORERS -> BallTabIcon(active = active)
+                    LeadersTab.ASSISTS -> BootTabIcon(
+                        tint = if (active) Color.White else MundialTheme.colors.textTertiary
                     )
                     LeadersTab.YELLOW -> CardTabIcon(
                         color = MundialTheme.colors.yellow.copy(alpha = if (active) 1f else 0.55f)
