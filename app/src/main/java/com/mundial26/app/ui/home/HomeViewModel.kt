@@ -26,6 +26,7 @@ sealed interface HomeUiState {
     data class Success(
         val live: List<Match>,
         val results: List<Match>,
+        val upcoming: List<Match>,
         val featured: Team,
         val groups: List<Group>,
         val scorers: List<Leader>,
@@ -105,7 +106,8 @@ class HomeViewModel(
                     .sortedBy { (it.day ?: "") + (it.time ?: "") }
                 _uiState.value = HomeUiState.Success(
                     live = matchRepository.liveMatches(),
-                    results = (recentFinished.take(5) + nextUpcoming.take(3)),
+                    results = recentFinished.take(5),
+                    upcoming = nextUpcoming.take(3),
                     featured = teamRepository.featured(),
                     groups = groups,
                     scorers = teamRepository.topScorers(),
