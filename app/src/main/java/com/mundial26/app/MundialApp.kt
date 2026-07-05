@@ -133,10 +133,11 @@ fun MundialApp(container: AppContainer) {
                 )
             }
             composable(TopDestination.TEAMS.route) {
-                val vm: TeamsViewModel = viewModel(factory = TeamsViewModel.Factory(container.teamRepository))
+                val vm: TeamsViewModel = viewModel(factory = TeamsViewModel.Factory(container.teamRepository, container.matchRepository))
                 TeamsScreen(
                     viewModel = vm,
-                    onTeamClick = { id -> navController.navigate(DetailRoutes.teamDetail(id)) }
+                    onTeamClick = { id -> navController.navigate(DetailRoutes.teamDetail(id)) },
+                    onMatchClick = { id -> navController.navigate(DetailRoutes.matchDetail(id)) }
                 )
             }
             composable(TopDestination.NEWS.route) {

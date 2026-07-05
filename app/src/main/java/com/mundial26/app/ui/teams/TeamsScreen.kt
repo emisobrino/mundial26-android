@@ -39,6 +39,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mundial26.app.domain.model.Nations
 import com.mundial26.app.domain.model.Team
+import com.mundial26.app.ui.components.BracketView
 import com.mundial26.app.ui.components.FlagAvatar
 import com.mundial26.app.ui.components.SegmentedControl
 import com.mundial26.app.ui.components.StandingsTable
@@ -52,6 +53,7 @@ import com.mundial26.app.ui.theme.MundialTheme
 fun TeamsScreen(
     viewModel: TeamsViewModel,
     onTeamClick: (String) -> Unit,
+    onMatchClick: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -82,7 +84,8 @@ fun TeamsScreen(
                 onSelectView = viewModel::selectView,
                 onSelectConf = viewModel::selectConf,
                 filteredTeams = { teams, c -> viewModel.filteredTeams(teams, c) },
-                onTeamClick = onTeamClick
+                onTeamClick = onTeamClick,
+                onMatchClick = onMatchClick
             )
         }
     }
@@ -134,6 +137,7 @@ private fun TeamsContent(
     onSelectConf: (ConfFilter) -> Unit,
     filteredTeams: (List<Team>, ConfFilter) -> List<Team>,
     onTeamClick: (String) -> Unit,
+    onMatchClick: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     PullToRefreshBox(
@@ -155,6 +159,12 @@ private fun TeamsContent(
                 state = state,
                 view = view,
                 onSelectView = onSelectView
+            )
+            TeamsView.BRACKET -> BracketTabContent(
+                state = state,
+                view = view,
+                onSelectView = onSelectView,
+                onMatchClick = onMatchClick
             )
         }
     }
@@ -190,7 +200,7 @@ private fun TeamsListContent(
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 SegmentedControl(
-                    options = listOf("Selecciones", "Grupos"),
+                    options = listOf("Selecciones", "Grupos", "Llaves"),
                     selected = view.ordinal,
                     onSelect = { onSelectView(TeamsView.entries[it]) }
                 )
@@ -328,7 +338,7 @@ private fun StandingsContent(
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 SegmentedControl(
-                    options = listOf("Selecciones", "Grupos"),
+                    options = listOf("Selecciones", "Grupos", "Llaves"),
                     selected = view.ordinal,
                     onSelect = { onSelectView(TeamsView.entries[it]) }
                 )
@@ -351,6 +361,36 @@ private fun StandingsContent(
         item {
             LegendRow()
         }
+    }
+}
+
+@Composable
+private fun BracketTabContent(
+    state: TeamsUiState.Success,
+    view: TeamsView,
+    onSelectView: (TeamsView) -> Unit,
+    onMatchClick: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(horizontal = 16.dp)
+    ) {
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = "Selecciones",
+            style = MaterialTheme.typography.headlineSmall,
+            color = MundialTheme.colors.textPrimary
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+        SegmentedControl(
+            options = listOf("Selecciones", "Grupos", "Llaves"),
+            selected = view.ordinal,
+            onSelect = { onSelectView(TeamsView.entries[it]) }
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        BracketView(rounds = state.bracket, onMatchClick = onMatchClick)
     }
 }
 
