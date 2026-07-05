@@ -25,6 +25,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -57,7 +58,11 @@ fun BracketView(
     modifier: Modifier = Modifier
 ) {
     if (rounds.isEmpty()) return
-    val pagerState = rememberPagerState { rounds.size }
+    // Arrancar en la ronda actual: la primera con algún partido sin jugar (hoy, octavos).
+    val startRound = remember(rounds) {
+        rounds.indexOfFirst { r -> r.games.any { !it.done } }.let { if (it < 0) rounds.lastIndex.coerceAtLeast(0) else it }
+    }
+    val pagerState = rememberPagerState(initialPage = startRound) { rounds.size }
     val scope = rememberCoroutineScope()
 
     Column(modifier = modifier.fillMaxSize()) {

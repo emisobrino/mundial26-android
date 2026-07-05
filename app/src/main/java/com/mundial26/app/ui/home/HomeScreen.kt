@@ -47,6 +47,7 @@ import com.mundial26.app.ui.components.MatchRow
 import com.mundial26.app.ui.components.NewsCardCompact
 import com.mundial26.app.ui.components.SectionHeader
 import com.mundial26.app.ui.components.StandingsTable
+import com.mundial26.app.ui.components.BracketView
 import com.mundial26.app.ui.components.bestThirdCodes
 import com.mundial26.app.ui.components.TournamentLeadersCard
 import com.mundial26.app.ui.components.BrandLogo26
@@ -66,6 +67,7 @@ fun HomeScreen(
     onTeamClick: (String) -> Unit,
     onLeadersClick: () -> Unit,
     onSeeTable: () -> Unit,
+    onSeeBracket: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -88,6 +90,7 @@ fun HomeScreen(
             onTeamClick = onTeamClick,
             onLeadersClick = onLeadersClick,
             onSeeTable = onSeeTable,
+            onSeeBracket = onSeeBracket,
             modifier = modifier
         )
     }
@@ -143,6 +146,7 @@ private fun HomeContent(
     onTeamClick: (String) -> Unit,
     onLeadersClick: () -> Unit,
     onSeeTable: () -> Unit,
+    onSeeBracket: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     PullToRefreshBox(
@@ -224,6 +228,22 @@ private fun HomeContent(
                 onClick = { onTeamClick(state.featured.id) },
                 modifier = Modifier.padding(horizontal = 16.dp)
             )
+        }
+
+        if (state.bracket.isNotEmpty()) {
+            item {
+                Column(
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    SectionHeader(title = "Llaves", actionText = "Ver todas", onAction = onSeeBracket)
+                    BracketView(
+                        rounds = state.bracket,
+                        onMatchClick = onMatchClick,
+                        modifier = Modifier.height(360.dp)
+                    )
+                }
+            }
         }
 
         if (state.groups.isNotEmpty()) {
