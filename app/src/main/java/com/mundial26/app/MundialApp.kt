@@ -1,10 +1,19 @@
 package com.mundial26.app
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import com.mundial26.app.ui.components.WorldCupLoader
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.withTimeoutOrNull
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -50,6 +59,18 @@ fun MundialApp(container: AppContainer) {
         else navController.navigate(DetailRoutes.newsDetail(id))
     }
 
+    // Intro a pantalla completa en el arranque en frío: se muestra mientras se hace
+    // la primera sincronización (calienta la caché), con un mínimo visible de ~2,5 s.
+    var booting by remember { mutableStateOf(true) }
+    LaunchedEffect(Unit) {
+        val start = System.currentTimeMillis()
+        runCatching { withTimeoutOrNull(6000) { container.matchRepository.resultsAndUpcoming() } }
+        val elapsed = System.currentTimeMillis() - start
+        if (elapsed < 2500) delay(2500 - elapsed)
+        booting = false
+    }
+
+    Box(modifier = Modifier.fillMaxSize()) {
     Scaffold(
         bottomBar = {
             if (!DetailRoutes.isDetail(currentRouteStr)) {
@@ -184,6 +205,11 @@ fun MundialApp(container: AppContainer) {
                 val vm: LeadersViewModel = viewModel(factory = LeadersViewModel.Factory(container.teamRepository))
                 LeadersScreen(viewModel = vm, onBack = { navController.popBackStack() })
             }
+        }
+    }
+
+        if (booting) {
+            WorldCupLoader(modifier = Modifier.fillMaxSize())
         }
     }
 }
