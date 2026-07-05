@@ -187,21 +187,6 @@ private fun HomeContent(
             }
         }
 
-        if (state.results.isNotEmpty()) {
-            item {
-                Column(
-                    modifier = Modifier.padding(horizontal = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    SectionHeader(title = "Resultados")
-                    Spacer(modifier = Modifier.height(2.dp))
-                    state.results.forEach { match ->
-                        MatchRow(match = match, onClick = { onMatchClick(match.id) })
-                    }
-                }
-            }
-        }
-
         if (state.upcoming.isNotEmpty()) {
             item {
                 Column(
@@ -211,6 +196,21 @@ private fun HomeContent(
                     SectionHeader(title = "Próximos")
                     Spacer(modifier = Modifier.height(2.dp))
                     state.upcoming.forEach { match ->
+                        MatchRow(match = match, onClick = { onMatchClick(match.id) })
+                    }
+                }
+            }
+        }
+
+        if (state.results.isNotEmpty()) {
+            item {
+                Column(
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    SectionHeader(title = "Resultados")
+                    Spacer(modifier = Modifier.height(2.dp))
+                    state.results.forEach { match ->
                         MatchRow(match = match, onClick = { onMatchClick(match.id) })
                     }
                 }
