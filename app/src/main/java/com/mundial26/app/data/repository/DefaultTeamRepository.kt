@@ -60,7 +60,19 @@ class DefaultTeamRepository(
     override suspend fun team(id: String): Team? {
         val team = teams().firstOrNull { it.id == id || it.code.equals(id, true) } ?: return null
         val squad = playerDao.byTeam(team.code).map { it.toPlayer() }
-        return team.copy(squad = enrichSquad(team.code, squad))
+        val enriched = markInjured(team.code, enrichSquad(team.code, squad))
+        val coach = runCatching { sync.coaches()[team.code] }.getOrNull().orEmpty()
+        return team.copy(squad = enriched, coach = coach)
+    }
+
+    /** Marca lesionados según la lista editorial (empareja por nombre normalizado). */
+    private fun markInjured(tla: String, squad: List<Player>): List<Player> {
+        val injured = EditorialSource.injured(tla)
+        if (injured.isEmpty()) return squad
+        return squad.map { p ->
+            val n = norm(p.name)
+            p.copy(injured = injured.any { n.contains(it) })
+        }
     }
 
     /**

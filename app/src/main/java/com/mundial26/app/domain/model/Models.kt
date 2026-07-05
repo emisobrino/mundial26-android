@@ -33,7 +33,8 @@ data class Team(
     val star: Star,
     val pros: List<String>, val cons: List<String>,
     val form: List<Char>,        // 'V' | 'E' | 'D'
-    val squad: List<Player> = emptyList()   // plantel real (football-data /teams.squad)
+    val squad: List<Player> = emptyList(),   // plantel real (football-data /teams.squad)
+    val coach: String = ""       // director técnico (football-data /teams.coach)
 )
 
 data class MatchStat(val label: String, val a: Int, val b: Int)
@@ -86,5 +87,6 @@ data class Player(
     val age: Int,
     val goals: Int,
     val assists: Int,
-    val captain: Boolean = false
+    val captain: Boolean = false,
+    val injured: Boolean = false
 )

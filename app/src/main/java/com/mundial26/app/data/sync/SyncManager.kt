@@ -64,4 +64,18 @@ class SyncManager(
 
     /** Perfil de persona de football-data (club actual y dorsal); null si falla. */
     suspend fun person(fdId: Long): FdPerson? = runCatching { api.person(fdId) }.getOrNull()
+
+    @Volatile private var coachCache: Map<String, String>? = null
+
+    /** Director técnico por TLA (football-data /teams.coach), cacheado en memoria; vacío si falla. */
+    suspend fun coaches(): Map<String, String> {
+        coachCache?.let { return it }
+        val m = runCatching {
+            api.teams().teams
+                .filter { it.coach.name.isNotBlank() }
+                .associate { it.tla to it.coach.name }
+        }.getOrDefault(emptyMap())
+        if (m.isNotEmpty()) coachCache = m
+        return m
+    }
 }
