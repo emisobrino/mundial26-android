@@ -84,12 +84,17 @@ class PlayerDetailViewModel private constructor(
         val team = teamRepository.team(teamId) ?: return PlayerDetailUiState.Error("Jugador no encontrado")
         val st = team.star
         val squadMatch = team.squad.firstOrNull { it.name.equals(st.name, ignoreCase = true) }
+        // Perfil FIFA de la estrella (para unificar la ficha: partidos/altura/peso/pie).
+        val profile = runCatching { fifa.playerProfile(st.name, team.code) }.getOrNull()
         return PlayerDetailUiState.Success(
             number = st.num, name = st.name, position = st.pos, note = st.note,
             teamName = team.name, teamFlag = team.flag,
             goals = st.stats.goals, assists = st.stats.assists, age = st.stats.age,
             yellow = squadMatch?.yellow ?: 0, red = squadMatch?.red ?: 0,
             rating = st.stats.rating, club = st.stats.club, marketValue = st.stats.marketValue,
+            caps = profile?.caps, intlGoals = profile?.intlGoals,
+            heightCm = profile?.heightCm, weightKg = profile?.weightKg,
+            preferredFoot = profile?.preferredFoot,
             isStar = true
         )
     }
