@@ -43,6 +43,25 @@ class FifaMatchSourceTest {
         assertEquals("", extractEventPlayer(99, "¡Goool de X (Y)!"))
     }
 
+    @Test fun extrae_goleador_de_penal_y_en_contra() {
+        assertEquals("Breel Embolo", extractEventPlayer(41, "¡Breel EMBOLO (Suiza) convierte el penal!"))
+        assertEquals("Damian Bobadilla", extractEventPlayer(34, "¡Damian BOBADILLA (Paraguay) anota en propia meta."))
+    }
+
+    @Test fun timeline_mapea_gol_de_penal_y_en_contra() {
+        val json = """
+            {"Event":[
+              {"Type":41,"MatchMinute":"70'","IdTeam":"43911","EventDescription":[{"Description":"¡Kylian MBAPPE (Francia) convierte el penal!"}]},
+              {"Type":34,"MatchMinute":"30'","IdTeam":"43883","EventDescription":[{"Description":"¡Damian BOBADILLA (Paraguay) anota en propia meta."}]}
+            ]}
+        """.trimIndent()
+        val events = parseFifaTimeline(json, homeTeamId = "43911")
+        assertEquals(2, events.size)
+        assertTrue(events.all { it.kind == EventKind.GOAL })
+        assertEquals("Kylian Mbappe", events[0].player)
+        assertEquals("Damian Bobadilla", events[1].player)
+    }
+
     // ---------- parseFifaCalendar ----------
 
     private val calendarJson = """

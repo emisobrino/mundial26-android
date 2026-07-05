@@ -132,6 +132,7 @@ fun parseFifaMinute(raw: String?): Int? {
 fun extractEventPlayer(type: Int, desc: String): String {
     val rx = when (type) {
         0 -> Regex("de (.+?) \\(")                                    // ¡Goool de Julian QUINONES (México)!
+        41, 34 -> Regex("¡(.+?) \\(")                                 // ¡Breel EMBOLO (Suiza) convierte el penal! / anota en propia meta.
         2 -> Regex("amonesta a (.+?) \\(")                            // El árbitro amonesta a X (Equipo).
         3 -> Regex("expulsión de (.+?) \\(")                          // ¡Tarjeta roja y expulsión de X (Equipo)!
         5 -> Regex("Cambio: (.+?) entra en lugar de (.+?) \\(")        // Cambio: X entra en lugar de Y (Equipo)
@@ -181,7 +182,7 @@ fun parseFifaTimeline(json: String, homeTeamId: String): List<MatchEvent> =
         runCatching {
             val e = el.jsonObject
             val kind = when (e["Type"]?.jsonPrimitive?.content?.toIntOrNull()) {
-                0 -> EventKind.GOAL
+                0, 34, 41 -> EventKind.GOAL   // gol normal, en propia puerta, de penal
                 2 -> EventKind.YELLOW
                 3 -> EventKind.RED
                 5 -> EventKind.SUB
