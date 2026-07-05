@@ -8,6 +8,15 @@ import okhttp3.Request
 private val ITEM = Regex("<item>(.*?)</item>", RegexOption.DOT_MATCHES_ALL)
 private fun tag(b: String, n: String) = Regex("<$n[^>]*>(.*?)</$n>", RegexOption.DOT_MATCHES_ALL).find(b)?.groupValues?.get(1)?.replace("<![CDATA[","")?.replace("]]>","")?.trim() ?: ""
 
+/** URL del atributo `url` de `<source ...>` (dominio del medio en Google News). */
+private fun sourceUrl(b: String) = Regex("<source[^>]*url=\"([^\"]+)\"").find(b)?.groupValues?.get(1)?.trim() ?: ""
+
+/** Logo del medio a partir de la URL de la fuente (servicio de favicons de Google, 128 px). */
+fun sourceLogoUrl(url: String): String {
+    val domain = url.substringAfter("://").substringBefore("/").removePrefix("www.")
+    return if (domain.isBlank()) "" else "https://www.google.com/s2/favicons?sz=128&domain=$domain"
+}
+
 private val MESES = arrayOf("ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic")
 
 /**
@@ -39,7 +48,7 @@ fun parseRss(xml: String, nowEpochMs: Long = System.currentTimeMillis()): List<N
     // Google News añade " - Fuente" al título; lo quitamos (la fuente va aparte).
     val title = tag(b, "title").removeSuffix(" - $source")
     // El <description> de Google News es HTML/links (no un resumen útil) → se omite.
-    NewsItem(id = tag(b, "link"), tag = source, colorHex = 0xFF2A398D, time = formatNewsTime(tag(b, "pubDate"), nowEpochMs), title = title, summary = "", body = emptyList())
+    NewsItem(id = tag(b, "link"), tag = source, colorHex = 0xFF2A398D, time = formatNewsTime(tag(b, "pubDate"), nowEpochMs), title = title, summary = "", body = emptyList(), imageUrl = sourceLogoUrl(sourceUrl(b)))
 }.toList()
 
 private const val UA = "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Mobile Safari/537.36"
