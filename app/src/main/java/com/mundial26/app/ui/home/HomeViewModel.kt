@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.lifecycle.viewmodel.initializer
+import com.mundial26.app.domain.model.BracketRound
 import com.mundial26.app.domain.model.Group
 import com.mundial26.app.domain.model.Leader
 import com.mundial26.app.domain.model.Match
@@ -33,6 +34,7 @@ sealed interface HomeUiState {
         val assists: List<Leader>,
         val yellowCards: List<Leader> = emptyList(),
         val redCards: List<Leader> = emptyList(),
+        val bracket: List<BracketRound> = emptyList(),
         val news: List<NewsItem>
     ) : HomeUiState
     data class Error(val message: String) : HomeUiState
@@ -114,6 +116,7 @@ class HomeViewModel(
                     assists = teamRepository.topAssists(),
                     yellowCards = teamRepository.topYellowCards(),
                     redCards = teamRepository.topRedCards(),
+                    bracket = matchRepository.bracket(),
                     news = newsRepository.news().take(4)
                 )
         } catch (e: Exception) {

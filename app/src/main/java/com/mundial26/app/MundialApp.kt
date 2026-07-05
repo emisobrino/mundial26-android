@@ -122,6 +122,14 @@ fun MundialApp(container: AppContainer) {
                             restoreState = true
                             popUpTo(TopDestination.HOME.route) { saveState = true }
                         }
+                    },
+                    onSeeBracket = {
+                        TeamsViewModel.requestedView = TeamsView.BRACKET
+                        navController.navigate(TopDestination.TEAMS.route) {
+                            launchSingleTop = true
+                            restoreState = true
+                            popUpTo(TopDestination.HOME.route) { saveState = true }
+                        }
                     }
                 )
             }
