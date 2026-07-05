@@ -61,6 +61,7 @@ import com.mundial26.app.domain.model.MatchEvent
 import com.mundial26.app.domain.model.MatchStat
 import com.mundial26.app.domain.model.MatchStatus
 import com.mundial26.app.domain.model.Star
+import com.mundial26.app.domain.model.WinProbability
 import com.mundial26.app.ui.components.FlagAvatar
 import com.mundial26.app.ui.components.LiveMinuteRow
 import com.mundial26.app.ui.components.liveMinuteText
@@ -165,6 +166,7 @@ private fun MatchDetailContent(state: MatchDetailUiState.Success, modifier: Modi
     ) {
         item { MatchHero(match = match) }
         if (match.status == MatchStatus.UPCOMING) {
+            state.winProb?.let { prob -> item { WinProbabilitySection(match = match, prob = prob) } }
             item { InfoSection(match = match) }
             if (state.homeStar != null || state.awayStar != null) {
                 item { StarsSection(match = match, homeStar = state.homeStar, awayStar = state.awayStar) }
@@ -187,6 +189,68 @@ private fun prettyDate(day: String?): String = runCatching {
     val d = java.time.LocalDate.parse(day)
     "${DIAS[d.dayOfWeek.value - 1]} ${d.dayOfMonth} de ${MESES[d.monthValue - 1]}"
 }.getOrDefault(day ?: "")
+
+/** Probabilidad de resultado en 90' (estimada por ranking FIFA), estilo panel de Google. */
+@Composable
+private fun WinProbabilitySection(match: Match, prob: WinProbability, modifier: Modifier = Modifier) {
+    val homeColor = MundialTheme.colors.win
+    val drawColor = MundialTheme.colors.textFaint
+    val awayColor = MundialTheme.colors.brand
+    Column(modifier = modifier.fillMaxWidth()) {
+        Text(
+            text = "PROBABILIDAD DE VICTORIA (90 MIN)",
+            style = MaterialTheme.typography.labelLarge,
+            color = MundialTheme.colors.textTertiary
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(MundialTheme.shapes.medium)
+                .background(MundialTheme.colors.surface)
+                .padding(16.dp)
+        ) {
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
+                ProbLabel(match.teamA, "${prob.home}%", homeColor, TextAlign.Start, Modifier.weight(1f))
+                ProbLabel("Tiempo extra", "${prob.draw}%", MundialTheme.colors.textTertiary, TextAlign.Center, Modifier.weight(1f))
+                ProbLabel(match.teamB, "${prob.away}%", awayColor, TextAlign.End, Modifier.weight(1f))
+            }
+            Spacer(modifier = Modifier.height(10.dp))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(8.dp)
+                    .clip(RoundedCornerShape(4.dp))
+            ) {
+                Box(modifier = Modifier.weight(prob.home.coerceAtLeast(0).toFloat().coerceAtLeast(0.01f)).fillMaxHeight().background(homeColor))
+                Box(modifier = Modifier.weight(prob.draw.coerceAtLeast(0).toFloat().coerceAtLeast(0.01f)).fillMaxHeight().background(drawColor))
+                Box(modifier = Modifier.weight(prob.away.coerceAtLeast(0).toFloat().coerceAtLeast(0.01f)).fillMaxHeight().background(awayColor))
+            }
+        }
+    }
+}
+
+@Composable
+private fun ProbLabel(name: String, pct: String, tint: Color, align: TextAlign, modifier: Modifier = Modifier) {
+    Column(modifier = modifier) {
+        Text(
+            text = name,
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Bold,
+            color = MundialTheme.colors.textSecondary,
+            textAlign = align,
+            modifier = Modifier.fillMaxWidth()
+        )
+        Text(
+            text = pct,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Black,
+            color = tint,
+            textAlign = align,
+            modifier = Modifier.fillMaxWidth()
+        )
+    }
+}
 
 /** Ficha de la previa: fase, fecha, hora y estadio. */
 @Composable

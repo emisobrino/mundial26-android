@@ -75,6 +75,9 @@ data class NewsItem(val id: String, val tag: String, val colorHex: Long, val tim
 /** Fila del ranking de líderes del torneo (goleadores / asistidores). */
 data class Leader(val rank: Int, val name: String, val flag: String, val value: Int)
 
+/** Probabilidad de resultado en los 90' (local / empate→alargue / visitante), en %. */
+data class WinProbability(val home: Int, val draw: Int, val away: Int)
+
 /** Club actual y dorsal de un jugador (de football-data /persons). */
 data class PlayerClubInfo(val club: String, val shirtNumber: Int?)
 

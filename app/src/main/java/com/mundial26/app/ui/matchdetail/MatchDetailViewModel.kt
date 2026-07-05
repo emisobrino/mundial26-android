@@ -7,6 +7,8 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.mundial26.app.domain.model.Match
 import com.mundial26.app.domain.model.MatchStatus
 import com.mundial26.app.domain.model.Star
+import com.mundial26.app.domain.model.WinProbability
+import com.mundial26.app.domain.prediction.winProbabilityFromRanks
 import com.mundial26.app.domain.repository.MatchRepository
 import com.mundial26.app.domain.repository.TeamRepository
 import kotlinx.coroutines.delay
@@ -20,7 +22,8 @@ sealed interface MatchDetailUiState {
     data class Success(
         val match: Match,
         val homeStar: Star? = null,   // estrella de cada equipo (para la previa)
-        val awayStar: Star? = null
+        val awayStar: Star? = null,
+        val winProb: WinProbability? = null   // probabilidad 90' por ranking FIFA (no finalizado)
     ) : MatchDetailUiState
     data class Error(val message: String) : MatchDetailUiState
 }
@@ -53,12 +56,16 @@ class MatchDetailViewModel(
 
     private suspend fun buildState(): MatchDetailUiState {
         val match = matchRepository.match(matchId) ?: return MatchDetailUiState.Error("Partido no encontrado")
-        // Estrellas para la previa (solo si el cruce ya tiene equipos definidos).
-        val homeStar = match.teamA.takeIf { it.isNotBlank() }
-            ?.let { runCatching { teamRepository.team(it)?.star }.getOrNull() }
-        val awayStar = match.teamB.takeIf { it.isNotBlank() }
-            ?.let { runCatching { teamRepository.team(it)?.star }.getOrNull() }
-        return MatchDetailUiState.Success(match, homeStar, awayStar)
+        // Equipos para la previa (solo si el cruce ya tiene equipos definidos).
+        val homeTeam = match.teamA.takeIf { it.isNotBlank() }
+            ?.let { runCatching { teamRepository.team(it) }.getOrNull() }
+        val awayTeam = match.teamB.takeIf { it.isNotBlank() }
+            ?.let { runCatching { teamRepository.team(it) }.getOrNull() }
+        // Probabilidad 90' por ranking FIFA: solo antes/durante el partido y con ambos ranks.
+        val winProb = if (match.status != MatchStatus.FINISHED &&
+            homeTeam != null && awayTeam != null && homeTeam.rank > 0 && awayTeam.rank > 0
+        ) winProbabilityFromRanks(homeTeam.rank, awayTeam.rank) else null
+        return MatchDetailUiState.Success(match, homeTeam?.star, awayTeam?.star, winProb)
     }
 
     private fun load() {
