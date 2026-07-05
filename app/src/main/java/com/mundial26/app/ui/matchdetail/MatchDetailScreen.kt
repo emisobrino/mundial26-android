@@ -61,6 +61,7 @@ import com.mundial26.app.domain.model.MatchStatus
 import com.mundial26.app.domain.model.Star
 import com.mundial26.app.ui.components.FlagAvatar
 import com.mundial26.app.ui.components.LiveMinutePill
+import com.mundial26.app.ui.components.liveMinuteText
 import com.mundial26.app.ui.theme.MundialTheme
 import com.mundial26.app.ui.theme.ScoreboardBig
 
@@ -359,9 +360,9 @@ private fun MatchHero(match: Match, modifier: Modifier = Modifier) {
                         textAlign = TextAlign.Center
                     )
                 }
-                if (match.status == MatchStatus.LIVE && match.minute != null) {
+                if (match.status == MatchStatus.LIVE && (match.minute != null || match.minuteLabel != null)) {
                     Spacer(modifier = Modifier.height(8.dp))
-                    LiveMinutePill(minute = match.minute)
+                    LiveMinutePill(label = liveMinuteText(match.minuteLabel, match.minute))
                 }
             }
 

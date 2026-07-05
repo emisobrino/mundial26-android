@@ -25,9 +25,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mundial26.app.ui.theme.MundialTheme
 
-/** Píldora roja con el minuto en juego; el minuto nuevo entra rodando desde abajo. */
+/**
+ * Píldora roja con el tiempo en juego. Recibe la etiqueta ya formateada
+ * ("63'", "45+2'", "ET"); el valor nuevo entra rodando desde abajo.
+ */
 @Composable
-fun LiveMinutePill(minute: Int?, modifier: Modifier = Modifier) {
+fun LiveMinutePill(label: String, modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
             .clip(RoundedCornerShape(20.dp))
@@ -36,16 +39,16 @@ fun LiveMinutePill(minute: Int?, modifier: Modifier = Modifier) {
         contentAlignment = Alignment.Center
     ) {
         AnimatedContent(
-            targetState = minute ?: 0,
+            targetState = label,
             transitionSpec = {
                 (slideInVertically(animationSpec = tween(200, easing = FastOutSlowInEasing)) { it / 2 } +
                     fadeIn(tween(200))) togetherWith
                     (slideOutVertically(animationSpec = tween(150)) { -it / 2 } + fadeOut(tween(150)))
             },
             label = "minute"
-        ) { min ->
+        ) { txt ->
             Text(
-                text = "$min'",
+                text = txt,
                 style = MaterialTheme.typography.labelSmall.copy(lineHeight = 12.sp),
                 color = Color.White,
                 fontWeight = FontWeight.Bold,
@@ -54,3 +57,7 @@ fun LiveMinutePill(minute: Int?, modifier: Modifier = Modifier) {
         }
     }
 }
+
+/** Etiqueta a mostrar en la píldora: la de FIFA si existe, si no el minuto derivado. */
+fun liveMinuteText(minuteLabel: String?, minute: Int?): String =
+    minuteLabel?.takeIf { it.isNotBlank() } ?: "${minute ?: 0}'"

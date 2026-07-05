@@ -88,9 +88,26 @@ private fun subCandidates(placeholder: String, byNumber: Map<Int, FifaMatchRef>,
 data class FifaLiveInfo(
     val homeTla: String, val awayTla: String,
     val minute: Int?, val scoreHome: Int?, val scoreAway: Int?,
-    val status: Int = 1                 // 3 = en juego, 0 = terminado, 1 = por empezar
+    val status: Int = 1,                // 3 = en juego, 0 = terminado, 1 = por empezar
+    val period: Int = 0,                // 3=1erT, 4=ET, 5=2doT, 10=fin, 11/13=alargue, 12=descanso alargue
+    val timeLabel: String = ""          // "45+2'", "ET", "90+3'" (frena en cortes)
 ) {
     val inPlay: Boolean get() = status == 3
+}
+
+/**
+ * Etiqueta de tiempo en vivo a partir del período y el MatchTime oficial de FIFA.
+ * FIFA ya congela el MatchTime en los cortes, así que solo hay que rotular los
+ * descansos y normalizar el descuento ("45'+2'" → "45+2'").
+ */
+fun fifaLiveLabel(period: Int, matchTime: String?): String {
+    val t = (matchTime ?: "").replace("'+", "+")   // "45'+2'" → "45+2'"
+    return when (period) {
+        4 -> "ET"           // entretiempo
+        12 -> "Descanso"    // descanso del alargue
+        14, 15 -> "Penales"
+        else -> t
+    }
 }
 
 /**
@@ -265,11 +282,14 @@ fun parseFifaLive(json: String): List<FifaLiveInfo> =
             val away = team("AwayTeam") ?: return@runCatching null
             fun str(o: Map<String, kotlinx.serialization.json.JsonElement>, k: String) =
                 o[k]?.takeIf { it !is kotlinx.serialization.json.JsonNull }?.jsonPrimitive?.content
+            val period = str(m, "Period")?.toIntOrNull() ?: 0
+            val matchTime = str(m, "MatchTime")
             FifaLiveInfo(
                 homeTla = str(home, "Abbreviation") ?: "", awayTla = str(away, "Abbreviation") ?: "",
-                minute = parseFifaMinute(str(m, "MatchTime")),
+                minute = parseFifaMinute(matchTime),
                 scoreHome = str(home, "Score")?.toIntOrNull(), scoreAway = str(away, "Score")?.toIntOrNull(),
-                status = str(m, "MatchStatus")?.toIntOrNull() ?: 1
+                status = str(m, "MatchStatus")?.toIntOrNull() ?: 1,
+                period = period, timeLabel = fifaLiveLabel(period, matchTime)
             )
         }.getOrNull()
     } ?: emptyList()
