@@ -30,6 +30,8 @@ sealed interface PlayerDetailUiState {
         val goals: Int,
         val assists: Int,
         val age: Int,
+        val yellow: Int = 0,      // tarjetas amarillas en el torneo
+        val red: Int = 0,         // tarjetas rojas en el torneo
         val rating: Double,       // 0.0 = sin dato → oculto
         val club: String,         // "" = oculto
         val marketValue: String,  // "" = oculto
@@ -80,10 +82,12 @@ class PlayerDetailViewModel private constructor(
     private suspend fun loadStar(teamId: String): PlayerDetailUiState {
         val team = teamRepository.team(teamId) ?: return PlayerDetailUiState.Error("Jugador no encontrado")
         val st = team.star
+        val squadMatch = team.squad.firstOrNull { it.name.equals(st.name, ignoreCase = true) }
         return PlayerDetailUiState.Success(
             number = st.num, name = st.name, position = st.pos, note = st.note,
             teamName = team.name, teamFlag = team.flag,
             goals = st.stats.goals, assists = st.stats.assists, age = st.stats.age,
+            yellow = squadMatch?.yellow ?: 0, red = squadMatch?.red ?: 0,
             rating = st.stats.rating, club = st.stats.club, marketValue = st.stats.marketValue
         )
     }
@@ -91,6 +95,8 @@ class PlayerDetailViewModel private constructor(
     private suspend fun loadPlayer(playerId: Long): PlayerDetailUiState {
         val p = teamRepository.player(playerId) ?: return PlayerDetailUiState.Error("Jugador no encontrado")
         val team = teamRepository.team(p.teamCode)
+        // El plantel de team viene enriquecido con FIFA (goles/asist./tarjetas por id).
+        val enriched = team?.squad?.firstOrNull { it.id == p.id }
         // Perfil FIFA por nombre+selección: caps, goles internacionales, altura, peso, pie.
         val profile = runCatching { fifa.playerProfile(p.name, p.teamCode) }.getOrNull()
         // Club y dorsal desde football-data /persons. Durante el Mundial, para algunos
@@ -103,6 +109,7 @@ class PlayerDetailViewModel private constructor(
             number = clubInfo?.shirtNumber ?: 0, name = p.name, position = p.position, note = "",
             teamName = teamName, teamFlag = team?.flag ?: tlaToIso(p.teamCode),
             goals = p.goals, assists = p.assists, age = p.age,
+            yellow = enriched?.yellow ?: p.yellow, red = enriched?.red ?: p.red,
             rating = 0.0, club = club, marketValue = "",
             caps = profile?.caps, intlGoals = profile?.intlGoals,
             heightCm = profile?.heightCm, weightKg = profile?.weightKg,
