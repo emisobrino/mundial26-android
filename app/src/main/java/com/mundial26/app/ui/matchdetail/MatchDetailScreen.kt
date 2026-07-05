@@ -18,6 +18,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -253,11 +255,13 @@ private fun StarsSection(match: Match, homeStar: Star?, awayStar: Star?, modifie
         )
         Spacer(modifier = Modifier.height(12.dp))
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(IntrinsicSize.Min),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            homeStar?.let { StarCard(star = it, iso = match.flagA, code = match.teamA, modifier = Modifier.weight(1f)) }
-            awayStar?.let { StarCard(star = it, iso = match.flagB, code = match.teamB, modifier = Modifier.weight(1f)) }
+            homeStar?.let { StarCard(star = it, iso = match.flagA, code = match.teamA, modifier = Modifier.weight(1f).fillMaxHeight()) }
+            awayStar?.let { StarCard(star = it, iso = match.flagB, code = match.teamB, modifier = Modifier.weight(1f).fillMaxHeight()) }
         }
     }
 }
@@ -287,15 +291,13 @@ private fun StarCard(star: Star, iso: String, code: String, modifier: Modifier =
             color = MundialTheme.colors.brand,
             textAlign = TextAlign.Center
         )
-        if (star.stats.goals > 0 || star.stats.assists > 0) {
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = "${star.stats.goals} goles · ${star.stats.assists} asist.",
-                style = MaterialTheme.typography.labelSmall,
-                color = MundialTheme.colors.textTertiary,
-                textAlign = TextAlign.Center
-            )
-        }
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = "${star.stats.goals} goles · ${star.stats.assists} asist.",
+            style = MaterialTheme.typography.labelSmall,
+            color = MundialTheme.colors.textTertiary,
+            textAlign = TextAlign.Center
+        )
     }
 }
 
