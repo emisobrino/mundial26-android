@@ -66,6 +66,7 @@ import com.mundial26.app.ui.components.FlagAvatar
 import com.mundial26.app.ui.components.LiveMinuteRow
 import com.mundial26.app.ui.components.liveMinuteText
 import com.mundial26.app.ui.theme.MundialTheme
+import com.mundial26.app.ui.theme.teamFlagColor
 import com.mundial26.app.ui.theme.ScoreboardBig
 
 /**
@@ -193,9 +194,10 @@ private fun prettyDate(day: String?): String = runCatching {
 /** Probabilidad de resultado en 90' (estimada por ranking FIFA), estilo panel de Google. */
 @Composable
 private fun WinProbabilitySection(match: Match, prob: WinProbability, modifier: Modifier = Modifier) {
-    val homeColor = MundialTheme.colors.win
+    // Color predominante de cada bandera (ej. Brasil verde, Noruega rojo).
+    val homeColor = teamFlagColor(match.teamA, MundialTheme.colors.win)
     val drawColor = MundialTheme.colors.textFaint
-    val awayColor = MundialTheme.colors.brand
+    val awayColor = teamFlagColor(match.teamB, MundialTheme.colors.brand)
     Column(modifier = modifier.fillMaxWidth()) {
         Text(
             text = "PROBABILIDAD DE VICTORIA (90 MIN)",
