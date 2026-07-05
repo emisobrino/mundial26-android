@@ -4,8 +4,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import com.mundial26.app.data.remote.youtube.YoutubeHighlightsSource
 import com.mundial26.app.domain.model.Match
 import com.mundial26.app.domain.model.MatchStatus
+import com.mundial26.app.domain.model.Nations
 import com.mundial26.app.domain.model.Star
 import com.mundial26.app.domain.model.WinProbability
 import com.mundial26.app.domain.prediction.winProbabilityFromRanks
@@ -23,7 +25,8 @@ sealed interface MatchDetailUiState {
         val match: Match,
         val homeStar: Star? = null,   // estrella de cada equipo (para la previa)
         val awayStar: Star? = null,
-        val winProb: WinProbability? = null   // probabilidad 90' por ranking FIFA (no finalizado)
+        val winProb: WinProbability? = null,   // probabilidad 90' por ranking FIFA (no finalizado)
+        val highlightVideoId: String? = null   // resumen en YouTube (partido finalizado)
     ) : MatchDetailUiState
     data class Error(val message: String) : MatchDetailUiState
 }
@@ -36,6 +39,8 @@ class MatchDetailViewModel(
 
     private val _uiState = MutableStateFlow<MatchDetailUiState>(MatchDetailUiState.Loading)
     val uiState: StateFlow<MatchDetailUiState> = _uiState.asStateFlow()
+
+    private val highlights = YoutubeHighlightsSource()
 
     init {
         load()
@@ -65,7 +70,12 @@ class MatchDetailViewModel(
         val winProb = if (match.status != MatchStatus.FINISHED &&
             homeTeam != null && awayTeam != null && homeTeam.rank > 0 && awayTeam.rank > 0
         ) winProbabilityFromRanks(homeTeam.rank, awayTeam.rank) else null
-        return MatchDetailUiState.Success(match, homeTeam?.star, awayTeam?.star, winProb)
+        // Resumen en video (YouTube) solo para partidos finalizados con equipos definidos.
+        val videoId = if (match.status == MatchStatus.FINISHED && match.teamA.isNotBlank() && match.teamB.isNotBlank()) {
+            val query = "${Nations.name(match.teamA)} ${Nations.name(match.teamB)} Mundial 2026 resumen ESPN"
+            runCatching { highlights.firstVideoId(query) }.getOrNull()
+        } else null
+        return MatchDetailUiState.Success(match, homeTeam?.star, awayTeam?.star, winProb, videoId)
     }
 
     private fun load() {
