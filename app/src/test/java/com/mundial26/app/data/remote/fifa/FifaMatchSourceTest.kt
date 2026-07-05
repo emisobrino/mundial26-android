@@ -14,6 +14,26 @@ class FifaMatchSourceTest {
         assertTrue(daysAround(null).isEmpty())
     }
 
+    // ---------- fifaLiveLabel / fifaAddedLabel ----------
+
+    @Test fun tiempo_base_y_descuento_separados() {
+        // Primer/segundo tiempo con descuento → base sin "+", globo azul "+N".
+        assertEquals("45'", fifaLiveLabel(3, "45'+2'"))
+        assertEquals("+2", fifaAddedLabel(3, "45'+2'"))
+        assertEquals("90'", fifaLiveLabel(5, "90'+3'"))
+        assertEquals("+3", fifaAddedLabel(5, "90'+3'"))
+    }
+
+    @Test fun sin_descuento_no_hay_globo_azul() {
+        assertEquals("63'", fifaLiveLabel(5, "63'"))
+        assertNull(fifaAddedLabel(5, "63'"))
+    }
+
+    @Test fun entretiempo_es_ET_sin_descuento() {
+        assertEquals("ET", fifaLiveLabel(4, "45'"))
+        assertNull(fifaAddedLabel(4, "45'+2'"))
+    }
+
     // ---------- parseFifaMinute ----------
 
     @Test fun minuto_simple_y_con_descuento() {

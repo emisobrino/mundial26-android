@@ -42,7 +42,8 @@ data class MatchEvent(val min: Int, val kind: EventKind, val side: Char, val pla
 
 data class Match(
     val id: String, val status: MatchStatus, val minute: Int?,
-    val minuteLabel: String? = null,   // etiqueta oficial FIFA: "45+2'", "ET", "90+3'" (frena en cortes)
+    val minuteLabel: String? = null,   // etiqueta base oficial FIFA: "45'", "ET", "90'" (frena en cortes)
+    val addedLabel: String? = null,    // descuento del tiempo actual: "+2" (globo azul), null si no hay
     val time: String?,
     val day: String?, val group: String, val stadium: String,
     val teamA: String, val teamB: String,      // códigos (ARG, MEX…)
