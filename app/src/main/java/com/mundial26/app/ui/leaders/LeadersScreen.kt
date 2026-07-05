@@ -184,10 +184,10 @@ private fun Toggle(tab: LeadersTab, onSelectTab: (LeadersTab) -> Unit, modifier:
             Box(
                 modifier = Modifier
                     .weight(1f)
+                    .height(44.dp)
                     .clip(RoundedCornerShape(10.dp))
                     .background(if (active) MundialTheme.colors.brandDeep else Color.Transparent)
-                    .clickable { onSelectTab(value) }
-                    .padding(vertical = 10.dp),
+                    .clickable { onSelectTab(value) },
                 contentAlignment = Alignment.Center
             ) {
                 when (value) {
