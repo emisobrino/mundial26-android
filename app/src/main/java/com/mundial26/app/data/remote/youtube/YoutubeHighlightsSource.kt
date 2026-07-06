@@ -1,10 +1,14 @@
 package com.mundial26.app.data.remote.youtube
 
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.net.URLEncoder
+import java.util.concurrent.TimeUnit
 
 private const val UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36"
 private val VIDEO_ID = Regex("\"videoId\":\"([A-Za-z0-9_-]{11})\"")
@@ -26,21 +30,33 @@ fun parseCandidates(html: String): List<Pair<String, String>> {
  * priorizando el canal ESPN. Sin API key: scrapea resultados y comprueba la reproducción
  * embebida con el endpoint oEmbed (401 = el dueño no permite embeber). Cacheado por consulta.
  */
-class YoutubeHighlightsSource(private val client: OkHttpClient = OkHttpClient()) {
-    private val cache = mutableMapOf<String, String?>()
+class YoutubeHighlightsSource(
+    private val client: OkHttpClient = OkHttpClient.Builder()
+        // Timeouts acotados: la página de resultados de YouTube es grande, damos margen de lectura
+        // pero sin colgarnos indefinidamente si la red va lenta.
+        .connectTimeout(6, TimeUnit.SECONDS)
+        .readTimeout(9, TimeUnit.SECONDS)
+        .build()
+) {
+    // Solo se cachean resultados exitosos: un fallo transitorio no debe deshabilitar el resumen
+    // para toda la sesión (se reintenta en la próxima carga/refresh).
+    private val cache = mutableMapOf<String, String>()
 
     suspend fun firstVideoId(query: String): String? = withContext(Dispatchers.IO) {
-        if (cache.containsKey(query)) return@withContext cache[query]
+        cache[query]?.let { return@withContext it }
         val id = runCatching {
             val candidates = parseCandidates(searchHtml(query))
             if (candidates.isEmpty()) return@runCatching null
             // Prioridad: canales ESPN primero (orden estable), luego el resto.
-            val ordered = candidates.sortedByDescending { it.second.contains("ESPN", ignoreCase = true) }
-            // Devolver el primero que permita embeber; si ninguno, el primero (la UI cae a miniatura).
-            ordered.take(6).firstOrNull { isEmbeddable(it.first) }?.first
-                ?: ordered.first().first
+            val ordered = candidates.sortedByDescending { it.second.contains("ESPN", ignoreCase = true) }.take(4)
+            // Comprobar embebibilidad en paralelo (antes eran hasta 6 peticiones oEmbed en serie).
+            val checks = coroutineScope {
+                ordered.map { c -> async { c.first to isEmbeddable(c.first) } }.awaitAll()
+            }
+            // Devolver el primero (en orden de prioridad) que permita embeber; si ninguno, el primero.
+            checks.firstOrNull { it.second }?.first ?: ordered.first().first
         }.getOrNull()
-        cache[query] = id
+        if (id != null) cache[query] = id
         id
     }
 

@@ -52,6 +52,8 @@ class MatchDetailViewModel(
                 // En vivo o por empezar (para captar el arranque): refrescar en silencio.
                 if (current is MatchDetailUiState.Success && current.match.status != MatchStatus.FINISHED) {
                     runCatching { buildState() }.getOrNull()?.let { _uiState.value = it }
+                    // Si el partido acaba de finalizar, traer el resumen.
+                    launch { resolveHighlight() }
                 }
             }
         }
@@ -59,23 +61,38 @@ class MatchDetailViewModel(
 
     fun retry() = load()
 
+    /**
+     * Estado base (rápido): partido, estrellas y probabilidad. NO resuelve el video de resumen,
+     * que es lento (scraping de YouTube) y se completa aparte. Conserva el videoId ya resuelto.
+     */
     private suspend fun buildState(): MatchDetailUiState {
         val match = matchRepository.match(matchId) ?: return MatchDetailUiState.Error("Partido no encontrado")
+        val existingVideo = (_uiState.value as? MatchDetailUiState.Success)?.highlightVideoId
+        // En un partido finalizado no se muestran estrellas ni probabilidad (son la previa):
+        // evitamos las llamadas a team() para que las stats/timeline aparezcan al instante.
+        if (match.status == MatchStatus.FINISHED) {
+            return MatchDetailUiState.Success(match, null, null, null, existingVideo)
+        }
         // Equipos para la previa (solo si el cruce ya tiene equipos definidos).
         val homeTeam = match.teamA.takeIf { it.isNotBlank() }
             ?.let { runCatching { teamRepository.team(it) }.getOrNull() }
         val awayTeam = match.teamB.takeIf { it.isNotBlank() }
             ?.let { runCatching { teamRepository.team(it) }.getOrNull() }
         // Probabilidad 90' por ranking FIFA: solo antes/durante el partido y con ambos ranks.
-        val winProb = if (match.status != MatchStatus.FINISHED &&
-            homeTeam != null && awayTeam != null && homeTeam.rank > 0 && awayTeam.rank > 0
+        val winProb = if (homeTeam != null && awayTeam != null && homeTeam.rank > 0 && awayTeam.rank > 0
         ) winProbabilityFromRanks(homeTeam.rank, awayTeam.rank) else null
-        // Resumen en video (YouTube) solo para partidos finalizados con equipos definidos.
-        val videoId = if (match.status == MatchStatus.FINISHED && match.teamA.isNotBlank() && match.teamB.isNotBlank()) {
-            val query = "${Nations.name(match.teamA)} ${Nations.name(match.teamB)} Mundial 2026 resumen ESPN"
-            runCatching { highlights.firstVideoId(query) }.getOrNull()
-        } else null
-        return MatchDetailUiState.Success(match, homeTeam?.star, awayTeam?.star, winProb, videoId)
+        return MatchDetailUiState.Success(match, homeTeam?.star, awayTeam?.star, winProb, existingVideo)
+    }
+
+    /** Resuelve el resumen en video (partidos finalizados) y lo inyecta en el estado ya visible. */
+    private suspend fun resolveHighlight() {
+        val cur = _uiState.value as? MatchDetailUiState.Success ?: return
+        val match = cur.match
+        if (cur.highlightVideoId != null) return
+        if (match.status != MatchStatus.FINISHED || match.teamA.isBlank() || match.teamB.isBlank()) return
+        val query = "${Nations.name(match.teamA)} ${Nations.name(match.teamB)} Mundial 2026 resumen ESPN"
+        val videoId = runCatching { highlights.firstVideoId(query) }.getOrNull() ?: return
+        (_uiState.value as? MatchDetailUiState.Success)?.let { _uiState.value = it.copy(highlightVideoId = videoId) }
     }
 
     private fun load() {
@@ -86,6 +103,8 @@ class MatchDetailViewModel(
             } catch (e: Exception) {
                 MatchDetailUiState.Error(e.message ?: "Error al cargar el partido")
             }
+            // El video de resumen se resuelve aparte para no retrasar stats/timeline.
+            launch { resolveHighlight() }
         }
     }
 
