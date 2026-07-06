@@ -4,20 +4,28 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.lifecycle.viewmodel.initializer
+import com.mundial26.app.data.remote.youtube.YoutubeHighlightsSource
 import com.mundial26.app.domain.model.BracketRound
 import com.mundial26.app.domain.model.Group
 import com.mundial26.app.domain.model.Leader
 import com.mundial26.app.domain.model.Match
 import com.mundial26.app.domain.model.MatchStatus
+import com.mundial26.app.domain.model.Nations
 import com.mundial26.app.domain.model.NewsItem
 import com.mundial26.app.domain.model.Team
 import com.mundial26.app.domain.repository.MatchRepository
 import com.mundial26.app.domain.repository.NewsRepository
 import com.mundial26.app.domain.repository.TeamRepository
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+
+/** Resumen en video de un partido reciente (para el carrusel de Inicio). */
+data class MatchHighlight(val match: Match, val videoId: String)
 
 /**
  * Estado de UI de la pantalla Inicio.
@@ -35,6 +43,7 @@ sealed interface HomeUiState {
         val yellowCards: List<Leader> = emptyList(),
         val redCards: List<Leader> = emptyList(),
         val bracket: List<BracketRound> = emptyList(),
+        val highlights: List<MatchHighlight> = emptyList(),
         val news: List<NewsItem>
     ) : HomeUiState
     data class Error(val message: String) : HomeUiState
@@ -55,6 +64,23 @@ class HomeViewModel(
 
     private val _isRefreshing = MutableStateFlow(false)
     val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
+
+    private val highlightsSource = YoutubeHighlightsSource()
+
+    /** Resuelve (en paralelo, cacheado) el video de resumen de los resultados recientes. */
+    private suspend fun resolveHighlights(recent: List<Match>): List<MatchHighlight> = coroutineScope {
+        recent.take(6)
+            .filter { it.teamA.isNotBlank() && it.teamB.isNotBlank() }
+            .map { m ->
+                async {
+                    val query = "${Nations.name(m.teamA)} ${Nations.name(m.teamB)} Mundial 2026 resumen ESPN"
+                    runCatching { highlightsSource.firstVideoId(query) }.getOrNull()
+                        ?.let { MatchHighlight(m, it) }
+                }
+            }
+            .awaitAll()
+            .filterNotNull()
+    }
 
     init {
         load()
@@ -117,6 +143,7 @@ class HomeViewModel(
                     yellowCards = teamRepository.topYellowCards(),
                     redCards = teamRepository.topRedCards(),
                     bracket = matchRepository.bracket(),
+                    highlights = runCatching { resolveHighlights(recentFinished) }.getOrDefault(emptyList()),
                     news = newsRepository.news().take(4)
                 )
         } catch (e: Exception) {
