@@ -380,18 +380,43 @@ class FifaMatchSource(private val client: OkHttpClient = OkHttpClient()) {
 
     private val lineupCache = mutableMapOf<String, List<FifaLineupPlayer>>()
 
-    /** Alineación más reciente del equipo [tla] (capitán, dorsal, id para stats). Cacheada. */
-    suspend fun teamLineup(tla: String): List<FifaLineupPlayer> = withContext(Dispatchers.IO) {
-        lineupCache[tla]?.let { return@withContext it }
-        val ref = calendar()
-            .filter { (it.homeTla == tla || it.awayTla == tla) && it.status != 1 && it.idMatch.isNotBlank() }
-            .maxByOrNull { it.utcDate } ?: return@withContext emptyList()
-        val lineup = runCatching {
+    /** Alineación de un partido concreto del equipo [tla] (capitán, dorsal, id para stats). Cacheada por partido. */
+    private fun lineupOf(ref: FifaMatchRef, tla: String): List<FifaLineupPlayer> =
+        lineupCache["${ref.idMatch}|$tla"] ?: runCatching {
             get("https://api.fifa.com/api/v3/live/football/$COMP/$SEASON/${ref.idStage}/${ref.idMatch}?language=es")
                 ?.let { parseTeamLineup(it, tla) }.orEmpty()
-        }.getOrDefault(emptyList())
-        if (lineup.isNotEmpty()) lineupCache[tla] = lineup
-        lineup
+        }.getOrDefault(emptyList()).also { if (it.isNotEmpty()) lineupCache["${ref.idMatch}|$tla"] = it }
+
+    private suspend fun playedMatches(tla: String): List<FifaMatchRef> = calendar()
+        .filter { (it.homeTla == tla || it.awayTla == tla) && it.status != 1 && it.idMatch.isNotBlank() }
+        .sortedBy { it.utcDate }
+
+    /** Alineación más reciente del equipo [tla] (capitán, dorsal, id para stats). */
+    suspend fun teamLineup(tla: String): List<FifaLineupPlayer> = withContext(Dispatchers.IO) {
+        val ref = playedMatches(tla).lastOrNull() ?: return@withContext emptyList()
+        lineupOf(ref, tla)
+    }
+
+    private val rosterCache = mutableMapOf<String, List<FifaLineupPlayer>>()
+
+    /**
+     * Unión de jugadores convocados por [tla] en TODOS sus partidos jugados. Sirve para
+     * mapear nombre→id FIFA de todo el plantel que participó (no solo del último XI), de
+     * modo que goles/asistencias del torneo se atribuyan también a rotados/suplentes.
+     * Capitán = true si lo fue en cualquier partido. Cacheada por sesión.
+     */
+    suspend fun teamRoster(tla: String): List<FifaLineupPlayer> = withContext(Dispatchers.IO) {
+        rosterCache[tla]?.let { return@withContext it }
+        val byId = LinkedHashMap<String, FifaLineupPlayer>()
+        for (ref in playedMatches(tla)) {
+            for (pl in lineupOf(ref, tla)) {
+                val prev = byId[pl.fifaId]
+                byId[pl.fifaId] = if (prev != null) pl.copy(captain = prev.captain || pl.captain) else pl
+            }
+        }
+        val roster = byId.values.toList()
+        if (roster.isNotEmpty()) rosterCache[tla] = roster
+        roster
     }
 
     private var liveCache: Pair<Long, List<FifaLiveInfo>>? = null

@@ -91,7 +91,6 @@ data class Player(
     val goals: Int,
     val assists: Int,
     val captain: Boolean = false,
-    val injured: Boolean = false,
     val yellow: Int = 0,
     val red: Int = 0
 )

@@ -370,17 +370,18 @@ object EditorialSource {
     )
 
     /**
-     * Lesionados curados por selección (TLA → apellidos, sin acentos, en minúsculas).
-     * Ninguna API gratis da el parte médico, así que se mantiene a mano: editá este mapa
-     * tras cada fecha. El plantel marca `injured = true` si el apellido del jugador aparece acá.
+     * Corrección editorial de posiciones mal clasificadas por football-data.org
+     * (TLA → nombre normalizado completo → posición estilo football-data, para que la
+     * ficha y el agrupado del plantel queden bien). Se empareja por NOMBRE COMPLETO
+     * (todos los tokens presentes) para no confundir homónimos: p. ej. Uruguay tiene a
+     * Ronald Araújo (central real) y a Maximiliano Araújo (mediocampista).
      */
-    val injuredByCode: Map<String, Set<String>> = mapOf(
-        "ARG" to setOf("lo celso"),
-        "FRA" to setOf("dembele"),
+    val positionByCode: Map<String, Map<String, String>> = mapOf(
+        "URU" to mapOf("maximiliano araujo" to "Midfield"),
     )
 
-    /** Apellidos lesionados de una selección (vacío si no hay datos). */
-    fun injured(tla: String): Set<String> = injuredByCode[tla.uppercase()] ?: emptySet()
+    /** Overrides de posición de una selección (clave = nombre normalizado; vacío si no hay). */
+    fun positionOverrides(tla: String): Map<String, String> = positionByCode[tla.uppercase()] ?: emptyMap()
 }
 
 /** Fila curada del ranking de asistidores (nombre + selección TLA + asistencias). */
