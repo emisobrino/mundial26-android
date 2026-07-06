@@ -90,12 +90,19 @@ class PlayerDetailViewModel private constructor(
         val squadMatch = team.squad.firstOrNull { it.name.equals(st.name, ignoreCase = true) }
             ?: team.squad.firstOrNull { nameMatches(it.name, st.name) }
         val profile = runCatching { fifa.playerProfile(squadMatch?.name ?: st.name, team.code) }.getOrNull()
+        // Club: si el editorial no lo trae (p. ej. Hakimi), resolverlo como el jugador del
+        // plantel (football-data /persons + TheSportsDB de fallback) usando el id del plantel.
+        val club = st.stats.club.takeIf { it.isNotBlank() } ?: run {
+            val clubInfo = squadMatch?.let { runCatching { teamRepository.playerClub(it.id) }.getOrNull() }
+            clubInfo?.club?.takeIf { it.isNotBlank() && !it.equals(team.name, true) }
+                ?: runCatching { sportsDb.clubOf(squadMatch?.name ?: st.name) }.getOrNull().orEmpty()
+        }
         return PlayerDetailUiState.Success(
             number = st.num, name = st.name, position = st.pos, note = st.note,
             teamName = team.name, teamFlag = team.flag,
             goals = st.stats.goals, assists = st.stats.assists, age = st.stats.age,
             yellow = squadMatch?.yellow ?: 0, red = squadMatch?.red ?: 0,
-            rating = st.stats.rating, club = st.stats.club, marketValue = st.stats.marketValue,
+            rating = st.stats.rating, club = club, marketValue = st.stats.marketValue,
             caps = profile?.caps, intlGoals = profile?.intlGoals,
             heightCm = profile?.heightCm, weightKg = profile?.weightKg,
             preferredFoot = profile?.preferredFoot,
