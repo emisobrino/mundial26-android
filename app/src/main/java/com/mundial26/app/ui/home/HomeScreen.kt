@@ -251,21 +251,6 @@ private fun HomeContent(
             }
         }
 
-        if (state.results.isNotEmpty()) {
-            item {
-                Column(
-                    modifier = Modifier.padding(horizontal = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    SectionHeader(title = "Resultados")
-                    Spacer(modifier = Modifier.height(2.dp))
-                    state.results.forEach { match ->
-                        MatchRow(match = match, onClick = { onMatchClick(match.id) })
-                    }
-                }
-            }
-        }
-
         if (state.highlights.isNotEmpty()) {
             item {
                 Column(
@@ -277,6 +262,21 @@ private fun HomeContent(
                         highlights = state.highlights,
                         onMatchClick = onMatchClick
                     )
+                }
+            }
+        }
+
+        if (state.results.isNotEmpty()) {
+            item {
+                Column(
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    SectionHeader(title = "Resultados")
+                    Spacer(modifier = Modifier.height(2.dp))
+                    state.results.forEach { match ->
+                        MatchRow(match = match, onClick = { onMatchClick(match.id) })
+                    }
                 }
             }
         }
