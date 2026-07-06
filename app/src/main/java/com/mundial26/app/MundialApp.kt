@@ -12,7 +12,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import com.mundial26.app.ui.components.WorldCupLoader
+import com.mundial26.app.ui.home.HomeUiState
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withTimeoutOrNull
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
@@ -59,12 +61,28 @@ fun MundialApp(container: AppContainer) {
         else navController.navigate(DetailRoutes.newsDetail(id))
     }
 
-    // Intro a pantalla completa en el arranque en frío: se muestra mientras se hace
-    // la primera sincronización (calienta la caché), con un mínimo visible de ~2,5 s.
+    // ViewModel de Inicio compartido: se crea en el arranque para poder mantener el intro
+    // hasta que Home tenga contenido real (evita el salto intro → spinner → contenido) y para
+    // no recargar al cambiar de pestaña.
+    val homeViewModel: HomeViewModel = viewModel(
+        factory = HomeViewModel.Factory(
+            container.matchRepository,
+            container.teamRepository,
+            container.newsRepository
+        )
+    )
+
+    // Intro a pantalla completa en el arranque en frío: se mantiene hasta que Home deja de
+    // estar en Loading (contenido listo), con un mínimo visible de ~2,5 s y un tope de 8 s
+    // para que un fallo de red no atrape al usuario en la intro.
     var booting by remember { mutableStateOf(true) }
     LaunchedEffect(Unit) {
         val start = System.currentTimeMillis()
-        runCatching { withTimeoutOrNull(6000) { container.matchRepository.resultsAndUpcoming() } }
+        runCatching {
+            withTimeoutOrNull(8000) {
+                homeViewModel.uiState.first { it !is HomeUiState.Loading }
+            }
+        }
         val elapsed = System.currentTimeMillis() - start
         if (elapsed < 2500) delay(2500 - elapsed)
         booting = false
@@ -95,13 +113,6 @@ fun MundialApp(container: AppContainer) {
             modifier = Modifier.padding(innerPadding)
         ) {
             composable(TopDestination.HOME.route) {
-                val homeViewModel: HomeViewModel = viewModel(
-                    factory = HomeViewModel.Factory(
-                        container.matchRepository,
-                        container.teamRepository,
-                        container.newsRepository
-                    )
-                )
                 HomeScreen(
                     viewModel = homeViewModel,
                     onNavigateToTab = { route ->
