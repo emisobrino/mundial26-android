@@ -132,6 +132,10 @@ class HomeViewModel(
                 val nextUpcoming = resultsAndUpcoming
                     .filter { it.status == MatchStatus.UPCOMING }
                     .sortedBy { (it.day ?: "") + (it.time ?: "") }
+                // Los highlights (scraping de YouTube + oEmbed) son lo más lento: NO deben
+                // bloquear el primer render. Se conservan los ya resueltos para evitar parpadeo
+                // y se refrescan en segundo plano más abajo.
+                val existingHighlights = (_uiState.value as? HomeUiState.Success)?.highlights ?: emptyList()
                 _uiState.value = HomeUiState.Success(
                     live = matchRepository.liveMatches(),
                     results = recentFinished.take(5),
@@ -143,9 +147,18 @@ class HomeViewModel(
                     yellowCards = teamRepository.topYellowCards(),
                     redCards = teamRepository.topRedCards(),
                     bracket = matchRepository.bracket(),
-                    highlights = runCatching { resolveHighlights(recentFinished) }.getOrDefault(emptyList()),
+                    highlights = existingHighlights,
                     news = newsRepository.news().take(4)
                 )
+                // Resolver los resúmenes en segundo plano y actualizar el estado ya visible.
+                viewModelScope.launch {
+                    val hl = runCatching { resolveHighlights(recentFinished) }.getOrDefault(emptyList())
+                    if (hl.isNotEmpty()) {
+                        (_uiState.value as? HomeUiState.Success)?.let { cur ->
+                            _uiState.value = cur.copy(highlights = hl)
+                        }
+                    }
+                }
         } catch (e: Exception) {
             // En un refresh silencioso de fondo, un fallo transitorio no debe tapar el contenido.
             if (!silent) _uiState.value = HomeUiState.Error(e.message ?: "Error al cargar Inicio")
