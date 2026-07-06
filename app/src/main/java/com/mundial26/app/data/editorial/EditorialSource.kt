@@ -382,6 +382,21 @@ object EditorialSource {
 
     /** Overrides de posición de una selección (clave = nombre normalizado; vacío si no hay). */
     fun positionOverrides(tla: String): Map<String, String> = positionByCode[tla.uppercase()] ?: emptyMap()
+
+    /** Copas del Mundo ganadas por selección (TLA). */
+    val worldCupTitles: Map<String, Int> = mapOf(
+        "BRA" to 5,   // 1958, 1962, 1970, 1994, 2002
+        "GER" to 4,   // 1954, 1974, 1990, 2014
+        "ITA" to 4,   // 1934, 1938, 1982, 2006
+        "ARG" to 3,   // 1978, 1986, 2022
+        "FRA" to 2,   // 1998, 2018
+        "URU" to 2,   // 1930, 1950
+        "ESP" to 1,   // 2010
+        "ENG" to 1,   // 1966
+    )
+
+    /** Cantidad de Copas del Mundo de una selección (0 = no campeón). */
+    fun titles(tla: String): Int = worldCupTitles[tla.uppercase()] ?: 0
 }
 
 /** Fila curada del ranking de asistidores (nombre + selección TLA + asistencias). */

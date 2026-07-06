@@ -40,6 +40,7 @@ class DefaultTeamRepository(
             base.copy(
                 pros = ed?.pros ?: emptyList(),
                 cons = ed?.cons ?: emptyList(),
+                titles = EditorialSource.titles(t.tla),
                 star = base.star.copy(stats = base.star.stats.copy(
                     goals = starP?.goals ?: 0,
                     assists = starP?.assists ?: 0,

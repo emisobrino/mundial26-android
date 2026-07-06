@@ -1,5 +1,6 @@
 package com.mundial26.app.ui.teamdetail
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -35,12 +36,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.mundial26.app.R
 import com.mundial26.app.data.mock.FakeTeamRepository
 import com.mundial26.app.domain.model.Player
 import com.mundial26.app.domain.model.Team
@@ -350,7 +353,7 @@ private fun TeamHero(team: Team, modifier: Modifier = Modifier) {
         ) {
             FlagAvatar(iso = team.flag, code = team.code, size = 64.dp)
 
-            Column {
+            Column(modifier = Modifier.weight(1f)) {
                 Row {
                     Text(
                         text = team.conf.label,
@@ -385,7 +388,30 @@ private fun TeamHero(team: Team, modifier: Modifier = Modifier) {
                     )
                 }
             }
+
+            if (team.titles > 0) TitlesBadge(count = team.titles)
         }
+    }
+}
+
+/** Distintivo de campeón del mundo: copa + cantidad de títulos, a la derecha del hero. */
+@Composable
+private fun TitlesBadge(count: Int, modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Image(
+            painter = painterResource(R.drawable.ic_trophy),
+            contentDescription = "Copas del Mundo",
+            modifier = Modifier.size(44.dp)
+        )
+        Text(
+            text = "×$count",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Black,
+            color = MundialTheme.colors.yellow
+        )
     }
 }
 
