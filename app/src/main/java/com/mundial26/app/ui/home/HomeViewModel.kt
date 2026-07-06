@@ -44,6 +44,7 @@ sealed interface HomeUiState {
         val redCards: List<Leader> = emptyList(),
         val bracket: List<BracketRound> = emptyList(),
         val highlights: List<MatchHighlight> = emptyList(),
+        val highlightsReady: Boolean = false,   // true cuando ya se intentó resolver el carrusel
         val news: List<NewsItem>
     ) : HomeUiState
     data class Error(val message: String) : HomeUiState
@@ -135,7 +136,8 @@ class HomeViewModel(
                 // Los highlights (scraping de YouTube + oEmbed) son lo más lento: NO deben
                 // bloquear el primer render. Se conservan los ya resueltos para evitar parpadeo
                 // y se refrescan en segundo plano más abajo.
-                val existingHighlights = (_uiState.value as? HomeUiState.Success)?.highlights ?: emptyList()
+                val prev = _uiState.value as? HomeUiState.Success
+                val existingHighlights = prev?.highlights ?: emptyList()
                 _uiState.value = HomeUiState.Success(
                     live = matchRepository.liveMatches(),
                     results = recentFinished.take(5),
@@ -148,15 +150,18 @@ class HomeViewModel(
                     redCards = teamRepository.topRedCards(),
                     bracket = matchRepository.bracket(),
                     highlights = existingHighlights,
+                    highlightsReady = prev?.highlightsReady == true,
                     news = newsRepository.news().take(4)
                 )
                 // Resolver los resúmenes en segundo plano y actualizar el estado ya visible.
+                // Se marca highlightsReady aunque venga vacío, para no bloquear el intro.
                 viewModelScope.launch {
                     val hl = runCatching { resolveHighlights(recentFinished) }.getOrDefault(emptyList())
-                    if (hl.isNotEmpty()) {
-                        (_uiState.value as? HomeUiState.Success)?.let { cur ->
-                            _uiState.value = cur.copy(highlights = hl)
-                        }
+                    (_uiState.value as? HomeUiState.Success)?.let { cur ->
+                        _uiState.value = cur.copy(
+                            highlights = hl.ifEmpty { cur.highlights },
+                            highlightsReady = true
+                        )
                     }
                 }
         } catch (e: Exception) {

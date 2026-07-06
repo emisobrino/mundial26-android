@@ -72,15 +72,15 @@ fun MundialApp(container: AppContainer) {
         )
     )
 
-    // Intro a pantalla completa en el arranque en frío: se mantiene hasta que Home deja de
-    // estar en Loading (contenido listo), con un mínimo visible de ~2,5 s y un tope de 8 s
-    // para que un fallo de red no atrape al usuario en la intro.
+    // Intro a pantalla completa en el arranque en frío: se mantiene hasta que Home esté
+    // completamente listo, incluido el carrusel de resúmenes (highlightsReady), para que todo
+    // aparezca a la vez. Mínimo visible ~2,5 s y tope de 12 s por si la red va lenta.
     var booting by remember { mutableStateOf(true) }
     LaunchedEffect(Unit) {
         val start = System.currentTimeMillis()
         runCatching {
-            withTimeoutOrNull(8000) {
-                homeViewModel.uiState.first { it !is HomeUiState.Loading }
+            withTimeoutOrNull(12000) {
+                homeViewModel.uiState.first { it is HomeUiState.Success && it.highlightsReady }
             }
         }
         val elapsed = System.currentTimeMillis() - start
