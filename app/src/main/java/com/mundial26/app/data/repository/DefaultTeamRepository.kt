@@ -60,40 +60,57 @@ class DefaultTeamRepository(
     override suspend fun team(id: String): Team? {
         val team = teams().firstOrNull { it.id == id || it.code.equals(id, true) } ?: return null
         val squad = playerDao.byTeam(team.code).map { it.toPlayer() }
-        val enriched = markInjured(team.code, enrichSquad(team.code, squad))
+        val enriched = applyPositionOverrides(team.code, enrichSquad(team.code, squad))
         val coach = runCatching { sync.coaches()[team.code] }.getOrNull().orEmpty()
-        return team.copy(squad = enriched, coach = coach)
+        // La estrella toma goles/asistencias del plantel ya enriquecido con FIFA (igual que la
+        // ficha del jugador), no de los datos crudos de football-data que quedan en teams().
+        val starName = team.star.name
+        val starP = enriched.firstOrNull { it.name.equals(starName, true) }
+            ?: enriched.firstOrNull { nameMatches(it.name, starName) }
+        val star = starP?.let {
+            team.star.copy(stats = team.star.stats.copy(goals = it.goals, assists = it.assists))
+        } ?: team.star
+        return team.copy(squad = enriched, coach = coach, star = star)
     }
 
-    /** Marca lesionados según la lista editorial (empareja por nombre normalizado). */
-    private fun markInjured(tla: String, squad: List<Player>): List<Player> {
-        val injured = EditorialSource.injured(tla)
-        if (injured.isEmpty()) return squad
+    /**
+     * Corrige posiciones mal clasificadas por football-data según el override editorial.
+     * Empareja por nombre completo (todos los tokens de la clave presentes en el nombre)
+     * para no confundir homónimos (p. ej. Ronald vs. Maximiliano Araújo en Uruguay).
+     */
+    private fun applyPositionOverrides(tla: String, squad: List<Player>): List<Player> {
+        val overrides = EditorialSource.positionOverrides(tla)
+        if (overrides.isEmpty()) return squad
         return squad.map { p ->
             val n = norm(p.name)
-            p.copy(injured = injured.any { n.contains(it) })
+            val newPos = overrides.entries
+                .firstOrNull { (key, _) -> key.split(' ').all { n.contains(it) } }?.value
+            if (newPos != null) p.copy(position = newPos) else p
         }
     }
 
     /**
-     * Enriquece el plantel con datos FIFA: capitán (de la alineación) y goles/asistencias
-     * REALES de todos los jugadores (por id, no solo los que están en el ranking de líderes).
-     * Empareja por nombre normalizado (con fallback por apellido). Si FIFA no responde,
-     * devuelve el plantel tal cual (goles/asistencias de football-data).
+     * Enriquece el plantel con datos FIFA: capitán y goles/asistencias REALES de todos los
+     * jugadores (por id, no solo los del ranking de líderes). Usa el ROSTER completo (unión
+     * de convocados en todos los partidos jugados), no solo el último XI, para que también
+     * los rotados/suplentes que anotaron tengan sus stats. Empareja por nombre normalizado
+     * (fallback por apellido). Si FIFA no responde, devuelve el plantel tal cual.
      */
     private suspend fun enrichSquad(tla: String, squad: List<Player>): List<Player> {
-        val lineup = runCatching { fifaMatch.teamLineup(tla) }.getOrDefault(emptyList())
-        if (lineup.isEmpty()) return squad
+        val roster = runCatching { fifaMatch.teamRoster(tla) }.getOrDefault(emptyList())
+        if (roster.isEmpty()) return squad
         val stats = runCatching { fifa.statsById() }.getOrDefault(emptyMap())
-        val byExact = lineup.associateBy { norm(it.name) }
-        val byLast = lineup.associateBy { norm(it.name).substringAfterLast(' ') }
+        val byExact = roster.associateBy { norm(it.name) }
+        val byLast = roster.associateBy { norm(it.name).substringAfterLast(' ') }
         return squad.map { p ->
             val li = byExact[norm(p.name)] ?: byLast[norm(p.name).substringAfterLast(' ')] ?: return@map p
             val s = stats[li.fifaId]
             p.copy(
                 captain = li.captain,
-                goals = s?.goals ?: p.goals,
-                assists = s?.assists ?: p.assists,
+                // football-data (scorers) y FIFA a veces discrepan (uno tiene al jugador y el otro
+                // no): tomamos el máximo, que es el conteo más completo (los goles solo crecen).
+                goals = maxOf(p.goals, s?.goals ?: 0),
+                assists = maxOf(p.assists, s?.assists ?: 0),
                 yellow = s?.yellow ?: p.yellow,
                 red = s?.red ?: p.red
             )
@@ -150,20 +167,39 @@ class DefaultTeamRepository(
     }
 }
 
-/** Normaliza un nombre: sin acentos, minúsculas, sin espacios extra. */
+/** Normaliza un nombre: sin acentos, sin puntuación (punto de "Jr.", guiones), minúsculas. */
 private fun norm(s: String): String =
     java.text.Normalizer.normalize(s, java.text.Normalizer.Form.NFD)
-        .replace(Regex("\\p{Mn}+"), "").lowercase().trim()
+        .replace(Regex("\\p{Mn}+"), "")
+        .replace(Regex("[^\\p{L}\\p{Nd} ]"), " ")
+        .replace(Regex("\\s+"), " ")
+        .lowercase().trim()
+
+/** Sufijos que football-data y el editorial abrevian distinto ("Jr." vs "Júnior"). */
+private val NAME_SUFFIXES = setOf("jr", "jnr", "junior", "sr", "snr", "senior", "ii", "iii", "iv")
+
+/** Nombre sin sufijos ("Vinícius Júnior" / "Vinícius Jr." → "vinícius"). */
+private fun coreName(n: String): String =
+    n.split(' ').filter { it.isNotBlank() && it !in NAME_SUFFIXES }.joinToString(" ")
 
 /**
- * Empareja el nombre editorial de la estrella con el del plantel real tolerando
- * acentos y formato ("L. Messi" ↔ "Lionel Messi" ↔ "Messi") comparando el apellido.
+ * Empareja el nombre editorial de la estrella con el del plantel real tolerando acentos y
+ * formato: "L. Messi" ↔ "Lionel Messi" ↔ "Messi" (apellido), y sufijos abreviados
+ * "Vinícius Jr." ↔ "Vinícius Júnior" (ignorando Jr./Júnior/Sr./II…).
  */
 fun nameMatches(playerName: String, starName: String): Boolean {
     val p = norm(playerName)
     val s = norm(starName)
     if (p == s) return true
+    val pc = coreName(p)
+    val sc = coreName(s)
+    if (pc.isNotEmpty() && pc == sc) return true
     val pLast = p.substringAfterLast(' ')
     val sLast = s.substringAfterLast(' ')
-    return pLast.length >= 3 && pLast == sLast
+    if (pLast.length >= 3 && pLast == sLast) return true
+    // Iniciales ("L. Messi" ↔ "Lionel Messi"): mismo nº de tokens, cada uno prefijo del otro.
+    val pt = pc.split(' ').filter { it.isNotBlank() }
+    val st = sc.split(' ').filter { it.isNotBlank() }
+    return pt.size == st.size && pt.size >= 2 &&
+        pt.indices.all { i -> pt[i] == st[i] || pt[i].startsWith(st[i]) || st[i].startsWith(pt[i]) }
 }

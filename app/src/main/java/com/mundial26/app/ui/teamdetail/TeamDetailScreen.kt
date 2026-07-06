@@ -1,6 +1,5 @@
 package com.mundial26.app.ui.teamdetail
 
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -34,9 +33,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
@@ -278,10 +274,6 @@ private fun SquadPlayerRow(player: Player, onClick: () -> Unit, modifier: Modifi
                     Spacer(modifier = Modifier.width(6.dp))
                     CaptainBadge()
                 }
-                if (player.injured) {
-                    Spacer(modifier = Modifier.width(6.dp))
-                    InjuredBadge()
-                }
             }
             if (player.age > 0) {
                 Text(
@@ -319,28 +311,6 @@ private fun CaptainBadge(modifier: Modifier = Modifier) {
             fontWeight = FontWeight.Black,
             color = Color.White
         )
-    }
-}
-
-/** Distintivo de lesionado: círculo blanco con una cruz roja (estilo parte médico). */
-@Composable
-private fun InjuredBadge(modifier: Modifier = Modifier) {
-    Box(
-        modifier = modifier
-            .size(16.dp)
-            .clip(CircleShape)
-            .background(Color.White),
-        contentAlignment = Alignment.Center
-    ) {
-        Canvas(modifier = Modifier.size(10.dp)) {
-            val red = Color(0xFFE23B3B)
-            val arm = size.minDimension * 0.34f
-            val w = size.width
-            val h = size.height
-            val r = CornerRadius(arm / 2, arm / 2)
-            drawRoundRect(color = red, topLeft = Offset((w - arm) / 2f, 0f), size = Size(arm, h), cornerRadius = r)
-            drawRoundRect(color = red, topLeft = Offset(0f, (h - arm) / 2f), size = Size(w, arm), cornerRadius = r)
-        }
     }
 }
 

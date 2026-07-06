@@ -7,6 +7,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.mundial26.app.data.net.tlaToIso
 import com.mundial26.app.data.remote.fifa.FifaStatsSource
 import com.mundial26.app.data.remote.sportsdb.SportsDbSource
+import com.mundial26.app.data.repository.nameMatches
 import com.mundial26.app.domain.repository.TeamRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -83,9 +84,12 @@ class PlayerDetailViewModel private constructor(
     private suspend fun loadStar(teamId: String): PlayerDetailUiState {
         val team = teamRepository.team(teamId) ?: return PlayerDetailUiState.Error("Jugador no encontrado")
         val st = team.star
+        // El nombre editorial de la estrella suele ser corto ("Vinícius Jr."); el del plantel real
+        // es el completo ("Vinícius Júnior"). Emparejamos tolerando acentos/formato para completar
+        // la ficha (partidos/altura/peso/pie), que FIFA solo devuelve con el nombre real.
         val squadMatch = team.squad.firstOrNull { it.name.equals(st.name, ignoreCase = true) }
-        // Perfil FIFA de la estrella (para unificar la ficha: partidos/altura/peso/pie).
-        val profile = runCatching { fifa.playerProfile(st.name, team.code) }.getOrNull()
+            ?: team.squad.firstOrNull { nameMatches(it.name, st.name) }
+        val profile = runCatching { fifa.playerProfile(squadMatch?.name ?: st.name, team.code) }.getOrNull()
         return PlayerDetailUiState.Success(
             number = st.num, name = st.name, position = st.pos, note = st.note,
             teamName = team.name, teamFlag = team.flag,
@@ -113,9 +117,11 @@ class PlayerDetailViewModel private constructor(
         val club = clubInfo?.club?.takeIf { it.isNotBlank() && !it.equals(teamName, true) }
             ?: runCatching { sportsDb.clubOf(p.name) }.getOrNull().orEmpty()
         return PlayerDetailUiState.Success(
-            number = clubInfo?.shirtNumber ?: 0, name = p.name, position = p.position, note = "",
+            number = clubInfo?.shirtNumber ?: 0, name = p.name, position = enriched?.position ?: p.position, note = "",
             teamName = teamName, teamFlag = team?.flag ?: tlaToIso(p.teamCode),
-            goals = p.goals, assists = p.assists, age = p.age,
+            // Goles/asistencias del plantel enriquecido (football-data + FIFA), para que la ficha
+            // coincida con la figura del partido y el resto de la app.
+            goals = enriched?.goals ?: p.goals, assists = enriched?.assists ?: p.assists, age = p.age,
             yellow = enriched?.yellow ?: p.yellow, red = enriched?.red ?: p.red,
             rating = 0.0, club = club, marketValue = "",
             caps = profile?.caps, intlGoals = profile?.intlGoals,
