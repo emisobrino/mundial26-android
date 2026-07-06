@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -43,6 +44,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mundial26.app.domain.model.Team
 import com.mundial26.app.ui.components.FlagAvatar
 import com.mundial26.app.ui.components.LiveMatchCard
+import com.mundial26.app.ui.components.MatchHighlights
 import com.mundial26.app.ui.components.MatchRow
 import com.mundial26.app.ui.components.NewsCardCompact
 import com.mundial26.app.ui.components.SectionHeader
@@ -93,6 +95,48 @@ fun HomeScreen(
             onSeeBracket = onSeeBracket,
             modifier = modifier
         )
+    }
+}
+
+/** Carrusel de resúmenes en video de los partidos recientes (widget con franja tricolor). */
+@Composable
+private fun HighlightsCarousel(
+    highlights: List<MatchHighlight>,
+    onMatchClick: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(MundialTheme.shapes.large)
+            .background(MundialTheme.colors.surfaceDark)
+    ) {
+        Row(modifier = Modifier.fillMaxWidth().height(4.dp)) {
+            Box(modifier = Modifier.weight(1f).fillMaxHeight().background(MundialTheme.colors.win))
+            Box(modifier = Modifier.weight(1f).fillMaxHeight().background(MundialTheme.colors.live))
+            Box(modifier = Modifier.weight(1f).fillMaxHeight().background(MundialTheme.colors.brandDeep))
+        }
+        LazyRow(
+            contentPadding = PaddingValues(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            items(highlights, key = { it.match.id }) { h ->
+                Column(modifier = Modifier.width(280.dp)) {
+                    MatchHighlights(videoId = h.videoId)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "${h.match.teamA} ${h.match.scoreA ?: 0} - ${h.match.scoreB ?: 0} ${h.match.teamB}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                        maxLines = 1,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onMatchClick(h.match.id) }
+                    )
+                }
+            }
+        }
     }
 }
 
@@ -218,6 +262,21 @@ private fun HomeContent(
                     state.results.forEach { match ->
                         MatchRow(match = match, onClick = { onMatchClick(match.id) })
                     }
+                }
+            }
+        }
+
+        if (state.highlights.isNotEmpty()) {
+            item {
+                Column(
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    SectionHeader(title = "Resúmenes")
+                    HighlightsCarousel(
+                        highlights = state.highlights,
+                        onMatchClick = onMatchClick
+                    )
                 }
             }
         }
