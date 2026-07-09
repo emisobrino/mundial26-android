@@ -5,13 +5,14 @@ App Android nativa para seguir la **Copa Mundial de la FIFA 2026** (Estados Unid
 ## Capturas
 
 <p align="center">
+  <img src="docs/screenshots/envivo.png" width="260" alt="Partido en vivo" />
   <img src="docs/screenshots/home.png" width="260" alt="Inicio" />
   <img src="docs/screenshots/partido.png" width="260" alt="Partido" />
-  <img src="docs/screenshots/alineaciones.png" width="260" alt="Alineaciones" />
 </p>
 <p align="center">
+  <img src="docs/screenshots/alineaciones.png" width="260" alt="Alineaciones" />
   <img src="docs/screenshots/plantel.png" width="260" alt="Plantel" />
-  <img src="docs/screenshots/notificaciones.png" width="260" alt="Notificaciones" />
+  <img src="docs/screenshots/notificaciones.png" width="260" alt="Notificación de partido" />
 </p>
 
 ## Funcionalidades
