@@ -403,18 +403,20 @@ class FifaMatchSource(private val client: OkHttpClient = OkHttpClient()) {
      * Unión de jugadores convocados por [tla] en TODOS sus partidos jugados. Sirve para
      * mapear nombre→id FIFA de todo el plantel que participó (no solo del último XI), de
      * modo que goles/asistencias del torneo se atribuyan también a rotados/suplentes.
-     * Capitán = true si lo fue en cualquier partido. Cacheada por sesión.
+     * Capitán = SOLO el del último partido jugado (si otro llevó la cinta un día que el
+     * titular descansó, no deben quedar dos capitanes). Cacheada por sesión.
      */
     suspend fun teamRoster(tla: String): List<FifaLineupPlayer> = withContext(Dispatchers.IO) {
         rosterCache[tla]?.let { return@withContext it }
         val byId = LinkedHashMap<String, FifaLineupPlayer>()
+        var captainId: String? = null
         for (ref in playedMatches(tla)) {
-            for (pl in lineupOf(ref, tla)) {
-                val prev = byId[pl.fifaId]
-                byId[pl.fifaId] = if (prev != null) pl.copy(captain = prev.captain || pl.captain) else pl
-            }
+            val lineup = lineupOf(ref, tla)
+            for (pl in lineup) byId[pl.fifaId] = pl
+            // El último partido con capitán conocido define al capitán vigente.
+            lineup.firstOrNull { it.captain }?.let { captainId = it.fifaId }
         }
-        val roster = byId.values.toList()
+        val roster = byId.values.map { it.copy(captain = it.fifaId == captainId) }
         if (roster.isNotEmpty()) rosterCache[tla] = roster
         roster
     }
