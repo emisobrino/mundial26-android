@@ -27,6 +27,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -203,9 +205,13 @@ private fun MatchDetailContent(state: MatchDetailUiState.Success, modifier: Modi
     }
 }
 
-/** XI titulares confirmados, en dos columnas (local | visitante), con dorsal y "C" del capitán. */
+/**
+ * XI titulares en la cancha (estilo Google): jugadores por línea con dorsal y nombre,
+ * formación arriba, y swipe izq/der para cambiar de equipo.
+ */
 @Composable
 private fun LineupsSection(match: Match, lineups: MatchLineups, modifier: Modifier = Modifier) {
+    val pagerState = rememberPagerState(pageCount = { 2 })
     Column(modifier = modifier.fillMaxWidth()) {
         Text(
             text = "ALINEACIONES",
@@ -213,55 +219,138 @@ private fun LineupsSection(match: Match, lineups: MatchLineups, modifier: Modifi
             color = MundialTheme.colors.textTertiary
         )
         Spacer(modifier = Modifier.height(12.dp))
-        Column(
+        HorizontalPager(state = pagerState) { page ->
+            if (page == 0) PitchLineup(iso = match.flagA, code = match.teamA, players = lineups.home)
+            else PitchLineup(iso = match.flagB, code = match.teamB, players = lineups.away)
+        }
+        Spacer(modifier = Modifier.height(10.dp))
+        // Indicador de página (dos puntos): el equipo visible.
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Center
+        ) {
+            repeat(2) { i ->
+                Box(
+                    modifier = Modifier
+                        .padding(horizontal = 4.dp)
+                        .size(8.dp)
+                        .clip(CircleShape)
+                        .background(if (pagerState.currentPage == i) MundialTheme.colors.brand else MundialTheme.colors.surface)
+                )
+            }
+        }
+    }
+}
+
+private val PitchLine = Color(0x33FFFFFF)
+
+/** "Kylian Mbappé" → "K. Mbappé"; nombres de una palabra quedan igual. */
+private fun shortName(full: String): String {
+    val parts = full.trim().split(" ")
+    return if (parts.size < 2) full else "${parts.first().first()}. ${parts.drop(1).joinToString(" ")}"
+}
+
+@Composable
+private fun PitchLineup(iso: String, code: String, players: List<LineupPlayer>, modifier: Modifier = Modifier) {
+    // Líneas de la cancha: arquero arriba, delanteros abajo. Sin dato de línea → mediocampo.
+    val gk = players.filter { it.line == 0 }
+    val def = players.filter { it.line == 1 }
+    val mid = players.filter { it.line == 2 || it.line == null }
+    val fwd = players.filter { it.line == 3 }
+    val formation = listOf(def.size, mid.size, fwd.size).filter { it > 0 }.joinToString("-")
+
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(20.dp))
+            .background(Color(0xFF1E5B3E))
+    ) {
+        // Cabecera: bandera + nombre + formación.
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(20.dp))
-                .background(MundialTheme.colors.surfaceDark)
-                .padding(16.dp)
+                .background(Color(0xFF174731))
+                .padding(horizontal = 14.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(modifier = Modifier.fillMaxWidth()) {
-                LineupColumn(iso = match.flagA, code = match.teamA, players = lineups.home, modifier = Modifier.weight(1f))
-                Spacer(modifier = Modifier.width(12.dp))
-                LineupColumn(iso = match.flagB, code = match.teamB, players = lineups.away, modifier = Modifier.weight(1f))
+            FlagAvatar(iso = iso, code = code, size = 22.dp)
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = Nations.name(code),
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
+            )
+            Spacer(modifier = Modifier.weight(1f))
+            if (formation.isNotBlank()) Text(
+                text = formation,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFFB7E4C7),
+                modifier = Modifier
+                    .clip(RoundedCornerShape(50))
+                    .background(Color(0xFF2E7D52))
+                    .padding(horizontal = 10.dp, vertical = 3.dp)
+            )
+        }
+        // La cancha: área del arco arriba y las líneas de jugadores.
+        Box(modifier = Modifier.fillMaxWidth()) {
+            androidx.compose.foundation.Canvas(modifier = Modifier.matchParentSize()) {
+                val w = size.width
+                // Área grande y chica del arco (arriba, centradas).
+                drawRect(PitchLine, topLeft = androidx.compose.ui.geometry.Offset(w * 0.22f, 0f),
+                    size = androidx.compose.ui.geometry.Size(w * 0.56f, 110f), style = androidx.compose.ui.graphics.drawscope.Stroke(2f))
+                drawRect(PitchLine, topLeft = androidx.compose.ui.geometry.Offset(w * 0.36f, 0f),
+                    size = androidx.compose.ui.geometry.Size(w * 0.28f, 45f), style = androidx.compose.ui.graphics.drawscope.Stroke(2f))
+                // Línea media + círculo central (abajo, insinuado).
+                drawLine(PitchLine, androidx.compose.ui.geometry.Offset(0f, size.height),
+                    androidx.compose.ui.geometry.Offset(w, size.height), 2f)
+                drawCircle(PitchLine, radius = 90f, center = androidx.compose.ui.geometry.Offset(w / 2f, size.height),
+                    style = androidx.compose.ui.graphics.drawscope.Stroke(2f))
+            }
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 18.dp),
+                verticalArrangement = Arrangement.spacedBy(22.dp)
+            ) {
+                listOf(gk, def, mid, fwd).filter { it.isNotEmpty() }.forEach { line ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        line.forEach { p -> PitchPlayer(p) }
+                    }
+                }
             }
         }
     }
 }
 
 @Composable
-private fun LineupColumn(iso: String, code: String, players: List<LineupPlayer>, modifier: Modifier = Modifier) {
-    Column(modifier = modifier) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            FlagAvatar(iso = iso, code = code, size = 22.dp)
-            Spacer(modifier = Modifier.width(8.dp))
+private fun PitchPlayer(p: LineupPlayer, modifier: Modifier = Modifier) {
+    Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
+        Box(
+            modifier = Modifier
+                .size(38.dp)
+                .clip(CircleShape)
+                .background(Color(0xFF12331F)),
+            contentAlignment = Alignment.Center
+        ) {
             Text(
-                text = code,
-                style = MaterialTheme.typography.titleSmall,
+                text = p.shirt?.toString() ?: "–",
+                style = MaterialTheme.typography.labelLarge,
                 fontWeight = FontWeight.Bold,
-                color = MundialTheme.colors.textPrimary
+                color = Color.White
             )
         }
-        Spacer(modifier = Modifier.height(10.dp))
-        players.forEach { p ->
-            Row(
-                modifier = Modifier.padding(vertical = 3.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = p.shirt?.toString() ?: "–",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MundialTheme.colors.textTertiary,
-                    modifier = Modifier.width(22.dp)
-                )
-                Text(
-                    text = p.name + if (p.captain) "  Ⓒ" else "",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MundialTheme.colors.textPrimary,
-                    maxLines = 1
-                )
-            }
-        }
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = shortName(p.name) + if (p.captain) " Ⓒ" else "",
+            style = MaterialTheme.typography.labelSmall,
+            color = Color.White,
+            maxLines = 1
+        )
     }
 }
 

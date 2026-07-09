@@ -96,7 +96,7 @@ class DefaultMatchRepository(
         if (m.teamA.isBlank() || m.teamB.isBlank()) return null
         val ref = runCatching { fifa.findMatch(m.day, m.teamA, m.teamB) }.getOrNull() ?: return null
         suspend fun side(tla: String) = runCatching { fifa.matchLineup(ref, tla) }.getOrDefault(emptyList())
-            .map { LineupPlayer(it.name, it.shirt, it.captain) }
+            .map { LineupPlayer(it.name, it.shirt, it.captain, it.position) }
         val home = side(m.teamA); val away = side(m.teamB)
         if (home.isEmpty() && away.isEmpty()) return null
         return MatchLineups(home, away)
