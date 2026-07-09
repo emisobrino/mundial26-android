@@ -38,11 +38,13 @@ import androidx.compose.material.icons.outlined.SportsSoccer
 import androidx.compose.material.icons.outlined.SwapHoriz
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -77,6 +79,7 @@ import com.mundial26.app.ui.theme.ScoreboardBig
 /**
  * Pantalla Detalle de partido: hero con marcador, estadísticas y eventos.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MatchDetailScreen(
     viewModel: MatchDetailViewModel,
@@ -84,6 +87,7 @@ fun MatchDetailScreen(
     modifier: Modifier = Modifier
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
 
     Column(
         modifier = modifier
@@ -98,7 +102,13 @@ fun MatchDetailScreen(
                 message = current.message,
                 onRetry = viewModel::retry
             )
-            is MatchDetailUiState.Success -> MatchDetailContent(state = current)
+            is MatchDetailUiState.Success -> PullToRefreshBox(
+                isRefreshing = isRefreshing,
+                onRefresh = viewModel::refresh,
+                modifier = Modifier.fillMaxSize()
+            ) {
+                MatchDetailContent(state = current)
+            }
         }
     }
 }

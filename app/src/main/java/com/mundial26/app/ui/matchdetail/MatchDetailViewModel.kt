@@ -40,7 +40,23 @@ class MatchDetailViewModel(
     private val _uiState = MutableStateFlow<MatchDetailUiState>(MatchDetailUiState.Loading)
     val uiState: StateFlow<MatchDetailUiState> = _uiState.asStateFlow()
 
+    private val _isRefreshing = MutableStateFlow(false)
+    val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
+
     private val highlights = YoutubeHighlightsSource()
+
+    /** Pull-to-refresh: recarga el partido (marcador, stats, timeline) sin el spinner de pantalla. */
+    fun refresh() {
+        viewModelScope.launch {
+            _isRefreshing.value = true
+            try {
+                runCatching { buildState() }.getOrNull()?.let { _uiState.value = it }
+                resolveHighlight()
+            } finally {
+                _isRefreshing.value = false
+            }
+        }
+    }
 
     init {
         load()
