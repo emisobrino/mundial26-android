@@ -5,7 +5,6 @@ import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.os.Build
 import android.os.Bundle
 import com.mundial26.app.MundialApplication
 import com.mundial26.app.domain.model.MatchStatus
@@ -66,11 +65,11 @@ suspend fun syncMatchAlarms(ctx: Context) {
                     putString("text", "${Nations.name(m.teamA)} vs ${Nations.name(m.teamB)} · ${m.time ?: ""}")
                 }
                 pendingIntent(app, "rem:${m.id}", ACTION_REMINDER, create = true, extras)
-                    ?.let { setExact(am, ko - REMINDER_LEAD_MS, it); scheduled.add("rem:${m.id}") }
+                    ?.let { schedule(am, ko - REMINDER_LEAD_MS, it); scheduled.add("rem:${m.id}") }
             }
             if (goalsOn && ko > now) {
                 pendingIntent(app, "gol:${m.id}", ACTION_GOALS_START, create = true)
-                    ?.let { setExact(am, ko, it); scheduled.add("gol:${m.id}") }
+                    ?.let { schedule(am, ko, it); scheduled.add("gol:${m.id}") }
             }
         }
 
@@ -80,12 +79,11 @@ suspend fun syncMatchAlarms(ctx: Context) {
     if (goalsOn && repo.liveMatches().isNotEmpty()) LiveGoalsService.start(app)
 }
 
-private fun setExact(am: AlarmManager, atMs: Long, pi: PendingIntent) {
-    val exact = Build.VERSION.SDK_INT < Build.VERSION_CODES.S || am.canScheduleExactAlarms()
-    runCatching {
-        if (exact) am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, atMs, pi)
-        else am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, atMs, pi)
-    }
+// Programación inexacta: no requiere el permiso "Alarmas y recordatorios" de Android
+// (SCHEDULE_EXACT_ALARM, denegado por defecto en Android 14). El aviso puede llegar con
+// unos minutos de margen, suficiente para un recordatorio de partido.
+private fun schedule(am: AlarmManager, atMs: Long, pi: PendingIntent) {
+    runCatching { am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, atMs, pi) }
 }
 
 class AlarmReceiver : BroadcastReceiver() {
