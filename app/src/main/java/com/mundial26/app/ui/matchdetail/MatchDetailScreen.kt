@@ -56,6 +56,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -315,11 +316,10 @@ private fun PitchLineup(iso: String, code: String, players: List<LineupPlayer>, 
                 verticalArrangement = Arrangement.spacedBy(22.dp)
             ) {
                 listOf(gk, def, mid, fwd).filter { it.isNotEmpty() }.forEach { line ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceEvenly
-                    ) {
-                        line.forEach { p -> PitchPlayer(p) }
+                    // Celdas de ancho igual: los círculos quedan en grilla pareja aunque
+                    // los nombres midan distinto.
+                    Row(modifier = Modifier.fillMaxWidth()) {
+                        line.forEach { p -> PitchPlayer(p, modifier = Modifier.weight(1f)) }
                     }
                 }
             }
@@ -349,7 +349,10 @@ private fun PitchPlayer(p: LineupPlayer, modifier: Modifier = Modifier) {
             text = shortName(p.name) + if (p.captain) " Ⓒ" else "",
             style = MaterialTheme.typography.labelSmall,
             color = Color.White,
-            maxLines = 1
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 2.dp)
         )
     }
 }
