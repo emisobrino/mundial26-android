@@ -253,8 +253,8 @@ fun parseFifaMatchStats(json: String, homeTeamId: String): List<MatchStat> = run
     list
 }.getOrDefault(emptyList())
 
-/** Jugador de una alineación FIFA: id (= key de stats), nombre, capitán y dorsal. */
-data class FifaLineupPlayer(val fifaId: String, val name: String, val captain: Boolean, val shirt: Int?)
+/** Jugador de una alineación FIFA: id (= key de stats), nombre, capitán, dorsal y si es titular. */
+data class FifaLineupPlayer(val fifaId: String, val name: String, val captain: Boolean, val shirt: Int?, val starter: Boolean = true)
 
 /** Extrae la alineación (Players) del equipo con TLA [tla] del detalle live de un partido. */
 fun parseTeamLineup(json: String, tla: String): List<FifaLineupPlayer> = runCatching {
@@ -273,7 +273,9 @@ fun parseTeamLineup(json: String, tla: String): List<FifaLineupPlayer> = runCatc
             FifaLineupPlayer(
                 fifaId = id, name = titleCaseName(name),
                 captain = p["Captain"]?.jsonPrimitive?.content?.toBooleanStrictOrNull() ?: false,
-                shirt = p["ShirtNumber"]?.jsonPrimitive?.content?.toIntOrNull()
+                shirt = p["ShirtNumber"]?.jsonPrimitive?.content?.toIntOrNull(),
+                // Status 1 = titular en el feed live de FIFA; sin campo → titular (no rompe el roster).
+                starter = p["Status"]?.jsonPrimitive?.content?.toIntOrNull()?.let { it == 1 } ?: true
             )
         }.getOrNull()
     } ?: emptyList()
@@ -379,6 +381,14 @@ class FifaMatchSource(private val client: OkHttpClient = OkHttpClient()) {
     }
 
     private val lineupCache = mutableMapOf<String, List<FifaLineupPlayer>>()
+
+    /** XI titular de [tla] en el partido [ref]; vacío si FIFA aún no publicó la alineación. */
+    suspend fun matchLineup(ref: FifaMatchRef, tla: String): List<FifaLineupPlayer> = withContext(Dispatchers.IO) {
+        val all = lineupOf(ref, tla)
+        // ponytail: si el feed no trae Status (todos "titulares"), recortamos a los primeros 11
+        // (FIFA lista titulares primero); suficiente hasta ver un caso real distinto.
+        all.filter { it.starter }.take(11).ifEmpty { all.take(11) }
+    }
 
     /** Alineación de un partido concreto del equipo [tla] (capitán, dorsal, id para stats). Cacheada por partido. */
     private fun lineupOf(ref: FifaMatchRef, tla: String): List<FifaLineupPlayer> =
