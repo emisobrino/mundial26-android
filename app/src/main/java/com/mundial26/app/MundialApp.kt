@@ -65,6 +65,15 @@ fun MundialApp(container: AppContainer) {
         runCatching { syncMatchAlarms(appContext) }
     }
 
+    // Tap en una notificación (recordatorio o gol) → abrir el detalle de ese partido.
+    val pendingMatch by MainActivity.pendingMatchId
+    LaunchedEffect(pendingMatch) {
+        pendingMatch?.let {
+            navController.navigate(DetailRoutes.matchDetail(it))
+            MainActivity.pendingMatchId.value = null
+        }
+    }
+
     // Las noticias reales del RSS (id = URL) abren directo en el navegador del teléfono;
     // las de muestra (sin URL) siguen yendo al detalle interno.
     val openNews: (String) -> Unit = { id ->

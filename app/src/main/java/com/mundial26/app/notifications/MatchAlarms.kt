@@ -63,6 +63,7 @@ suspend fun syncMatchAlarms(ctx: Context) {
                     putInt("notifId", ("rem:" + m.id).hashCode())
                     putString("title", "Empieza en 10 min")
                     putString("text", "${Nations.name(m.teamA)} vs ${Nations.name(m.teamB)} · ${m.time ?: ""}")
+                    putString("matchId", m.id)
                 }
                 pendingIntent(app, "rem:${m.id}", ACTION_REMINDER, create = true, extras)
                     ?.let { schedule(am, ko - REMINDER_LEAD_MS, it); scheduled.add("rem:${m.id}") }
@@ -94,7 +95,8 @@ class AlarmReceiver : BroadcastReceiver() {
                 id = intent.getIntExtra("notifId", 2000),
                 channel = Notif.CH_MATCHES,
                 title = intent.getStringExtra("title") ?: "Partido próximo",
-                text = intent.getStringExtra("text") ?: ""
+                text = intent.getStringExtra("text") ?: "",
+                matchId = intent.getStringExtra("matchId")
             )
             ACTION_GOALS_START -> if (NotifPrefs.goalsEnabled(ctx)) LiveGoalsService.start(ctx)
         }
