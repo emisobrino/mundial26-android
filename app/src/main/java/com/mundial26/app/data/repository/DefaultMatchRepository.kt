@@ -91,6 +91,17 @@ class DefaultMatchRepository(
         }
         return entities.toBracket().ifEmpty { MockData.bracket }
     }
+    override suspend fun lineups(id: String): MatchLineups? {
+        val m = all().firstOrNull { it.id == id } ?: return null
+        if (m.teamA.isBlank() || m.teamB.isBlank()) return null
+        val ref = runCatching { fifa.findMatch(m.day, m.teamA, m.teamB) }.getOrNull() ?: return null
+        suspend fun side(tla: String) = runCatching { fifa.matchLineup(ref, tla) }.getOrDefault(emptyList())
+            .map { LineupPlayer(it.name, it.shirt, it.captain) }
+        val home = side(m.teamA); val away = side(m.teamB)
+        if (home.isEmpty() && away.isEmpty()) return null
+        return MatchLineups(home, away)
+    }
+
     override suspend fun match(id: String): Match? {
         val m = allWithLive().firstOrNull { it.id == id } ?: return null
         val ref = runCatching { fifa.findMatch(m.day, m.teamA, m.teamB) }.getOrNull()

@@ -42,6 +42,10 @@ data class MatchStat(val label: String, val a: Int, val b: Int)
 enum class EventKind { GOAL, YELLOW, RED, SUB }
 data class MatchEvent(val min: Int, val kind: EventKind, val side: Char, val player: String) // side 'A'|'B'
 
+/** XI titular confirmado de ambos equipos (FIFA lo publica ~1 h antes del partido). */
+data class LineupPlayer(val name: String, val shirt: Int?, val captain: Boolean = false)
+data class MatchLineups(val home: List<LineupPlayer>, val away: List<LineupPlayer>)
+
 data class Match(
     val id: String, val status: MatchStatus, val minute: Int?,
     val minuteLabel: String? = null,   // etiqueta base oficial FIFA: "45'", "ET", "90'" (frena en cortes)

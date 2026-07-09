@@ -61,8 +61,10 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mundial26.app.data.mock.FakeMatchRepository
 import com.mundial26.app.data.mock.MockData
 import com.mundial26.app.domain.model.EventKind
+import com.mundial26.app.domain.model.LineupPlayer
 import com.mundial26.app.domain.model.Match
 import com.mundial26.app.domain.model.MatchEvent
+import com.mundial26.app.domain.model.MatchLineups
 import com.mundial26.app.domain.model.MatchStat
 import com.mundial26.app.domain.model.MatchStatus
 import com.mundial26.app.domain.model.Nations
@@ -196,6 +198,69 @@ private fun MatchDetailContent(state: MatchDetailUiState.Success, modifier: Modi
         }
         if (match.events.isNotEmpty()) {
             item { EventsSection(match = match) }
+        }
+        state.lineups?.let { item { LineupsSection(match = match, lineups = it) } }
+    }
+}
+
+/** XI titulares confirmados, en dos columnas (local | visitante), con dorsal y "C" del capitán. */
+@Composable
+private fun LineupsSection(match: Match, lineups: MatchLineups, modifier: Modifier = Modifier) {
+    Column(modifier = modifier.fillMaxWidth()) {
+        Text(
+            text = "ALINEACIONES",
+            style = MaterialTheme.typography.labelLarge,
+            color = MundialTheme.colors.textTertiary
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(20.dp))
+                .background(MundialTheme.colors.surfaceDark)
+                .padding(16.dp)
+        ) {
+            Row(modifier = Modifier.fillMaxWidth()) {
+                LineupColumn(iso = match.flagA, code = match.teamA, players = lineups.home, modifier = Modifier.weight(1f))
+                Spacer(modifier = Modifier.width(12.dp))
+                LineupColumn(iso = match.flagB, code = match.teamB, players = lineups.away, modifier = Modifier.weight(1f))
+            }
+        }
+    }
+}
+
+@Composable
+private fun LineupColumn(iso: String, code: String, players: List<LineupPlayer>, modifier: Modifier = Modifier) {
+    Column(modifier = modifier) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            FlagAvatar(iso = iso, code = code, size = 22.dp)
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = code,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                color = MundialTheme.colors.textPrimary
+            )
+        }
+        Spacer(modifier = Modifier.height(10.dp))
+        players.forEach { p ->
+            Row(
+                modifier = Modifier.padding(vertical = 3.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = p.shirt?.toString() ?: "–",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MundialTheme.colors.textTertiary,
+                    modifier = Modifier.width(22.dp)
+                )
+                Text(
+                    text = p.name + if (p.captain) "  Ⓒ" else "",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MundialTheme.colors.textPrimary,
+                    maxLines = 1
+                )
+            }
         }
     }
 }

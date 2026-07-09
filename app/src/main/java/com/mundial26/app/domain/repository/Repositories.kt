@@ -8,6 +8,8 @@ interface MatchRepository {
     suspend fun byDay(): Map<String, List<Match>>      // calendario
     suspend fun bracket(): List<BracketRound>
     suspend fun match(id: String): Match?
+    /** XI titulares confirmados del partido; null si FIFA aún no los publicó. */
+    suspend fun lineups(id: String): MatchLineups? = null
     /** Fuerza una resincronización (pull-to-refresh), ignorando el TTL. */
     suspend fun refresh() {}
 }
