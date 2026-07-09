@@ -1,15 +1,24 @@
 package com.mundial26.app
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.runtime.mutableStateOf
 import com.mundial26.app.ui.theme.MundialTheme
 
 class MainActivity : ComponentActivity() {
+
+    companion object {
+        /** Partido a abrir al entrar desde una notificación (extra "matchId"); lo consume MundialApp. */
+        val pendingMatchId = mutableStateOf<String?>(null)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        intent?.getStringExtra("matchId")?.let { pendingMatchId.value = it }
         // Tema oscuro único: iconos de status/navigation bar siempre claros.
         enableEdgeToEdge(
             statusBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
@@ -21,5 +30,11 @@ class MainActivity : ComponentActivity() {
                 MundialApp(container)
             }
         }
+    }
+
+    // La app ya estaba abierta: la notificación llega como new intent (singleTop).
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        intent.getStringExtra("matchId")?.let { pendingMatchId.value = it }
     }
 }

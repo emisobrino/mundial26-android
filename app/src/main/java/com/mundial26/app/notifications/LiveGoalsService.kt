@@ -44,43 +44,70 @@ class LiveGoalsService : Service() {
         return START_STICKY
     }
 
+    // Marcador visto por partido (vida del servicio): detecta el gol por el cambio de score,
+    // que llega antes que la timeline con el goleador.
+    private val lastScores = mutableMapOf<String, Pair<Int, Int>>()
+
     private fun loop() = scope.launch {
         val repo = (application as MundialApplication).container.matchRepository
         var emptyStreak = 0
-        var firstPass = true   // el primer barrido siembra los goles ya ocurridos sin notificar (evita ráfaga al arrancar)
+        var firstPass = true   // el primer barrido siembra el estado actual sin notificar (evita ráfaga al arrancar)
         while (isActive) {
             if (!NotifPrefs.goalsEnabled(applicationContext)) break
             val live = runCatching { repo.liveMatches() }.getOrDefault(emptyList())
             if (live.isEmpty()) {
                 // ~4 min de gracia: cubre el retraso de datos justo tras el KO antes de rendirse.
-                if (++emptyStreak >= 8) break
+                if (++emptyStreak >= 16) break
             } else {
                 emptyStreak = 0
                 val seen = NotifPrefs.seenGoals(applicationContext)
                 for (m in live) {
+                    // 1) Aviso inmediato por cambio de marcador (aún sin goleador).
+                    val score = (m.scoreA ?: 0) to (m.scoreB ?: 0)
+                    val prev = lastScores[m.id]
+                    if (prev != null && !firstPass && score.first + score.second > prev.first + prev.second) {
+                        val country = if (score.first > prev.first) m.teamA else m.teamB
+                        Notif.post(
+                            this@LiveGoalsService,
+                            id = goalNotifId(m.id, score.first + score.second),
+                            channel = Notif.CH_GOALS,
+                            title = "⚽ ¡Gol de ${Nations.name(country)}!",
+                            text = "${m.teamA} ${score.first} - ${score.second} ${m.teamB}",
+                            matchId = m.id
+                        )
+                    }
+                    lastScores[m.id] = score
+                    // 2) Con la timeline: misma notificación actualizada con goleador y minuto.
                     val full = runCatching { repo.match(m.id) }.getOrNull() ?: m
-                    full.events.filter { it.kind == EventKind.GOAL }.forEach { ev ->
+                    val goals = full.events.filter { it.kind == EventKind.GOAL }
+                    goals.forEachIndexed { i, ev ->
                         val key = "${full.id}:${ev.min}:${ev.player}"
                         if (key !in seen) {
                             seen.add(key)
                             NotifPrefs.markGoalSeen(applicationContext, key)
-                            if (!firstPass) postGoal(full, ev)
+                            if (!firstPass) postGoal(full, ev, goalIndex = i + 1)
                         }
                     }
                 }
                 firstPass = false
             }
-            delay(30_000)
+            delay(15_000)
         }
         stopSelf()
     }
 
-    private fun postGoal(m: Match, ev: MatchEvent) {
+    // ponytail: el id por (partido, nº de gol) hace que el aviso provisional del marcador y el de
+    // la timeline sean LA MISMA notificación (la 2ª reemplaza a la 1ª). Si dos goles casi
+    // simultáneos llegan desordenados podría cruzarse el reemplazo; aceptable.
+    private fun goalNotifId(matchId: String, goalNumber: Int) = "$matchId:goal:$goalNumber".hashCode()
+
+    private fun postGoal(m: Match, ev: MatchEvent, goalIndex: Int) {
         val country = if (ev.side == 'A') m.teamA else m.teamB
         Notif.post(
-            this, id = "${m.id}:${ev.min}:${ev.player}".hashCode(), channel = Notif.CH_GOALS,
+            this, id = goalNotifId(m.id, goalIndex), channel = Notif.CH_GOALS,
             title = "⚽ ¡Gol de ${Nations.name(country)}!",
-            text = "${ev.player} · ${ev.min}'  (${m.teamA} ${m.scoreA ?: 0}-${m.scoreB ?: 0} ${m.teamB})"
+            text = "${ev.player} · ${ev.min}'  (${m.teamA} ${m.scoreA ?: 0}-${m.scoreB ?: 0} ${m.teamB})",
+            matchId = m.id
         )
     }
 

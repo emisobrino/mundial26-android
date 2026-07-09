@@ -2,10 +2,13 @@ package com.mundial26.app.notifications
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import com.mundial26.app.MainActivity
 
 /** Preferencias de notificaciones (dos switches) + set de goles ya avisados. SharedPreferences: dos flags no ameritan DataStore. */
 object NotifPrefs {
@@ -44,7 +47,7 @@ object Notif {
 
     private fun smallIcon(ctx: Context) = ctx.applicationInfo.icon
 
-    fun post(ctx: Context, id: Int, channel: String, title: String, text: String) {
+    fun post(ctx: Context, id: Int, channel: String, title: String, text: String, matchId: String? = null) {
         ensureChannels(ctx)
         val n = NotificationCompat.Builder(ctx, channel)
             .setSmallIcon(smallIcon(ctx))
@@ -53,6 +56,18 @@ object Notif {
             .setStyle(NotificationCompat.BigTextStyle().bigText(text))
             .setAutoCancel(true)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
+            // Tocar la notificación abre la app directo en el detalle del partido.
+            .apply {
+                if (matchId != null) setContentIntent(
+                    PendingIntent.getActivity(
+                        ctx, id,
+                        Intent(ctx, MainActivity::class.java)
+                            .putExtra("matchId", matchId)
+                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP),
+                        PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+                    )
+                )
+            }
             .build()
         // ponytail: si falta el permiso POST_NOTIFICATIONS (API 33+) no revienta, simplemente no se muestra.
         if (NotificationManagerCompat.from(ctx).areNotificationsEnabled()) {
