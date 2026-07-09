@@ -70,6 +70,7 @@ fun HomeScreen(
     onLeadersClick: () -> Unit,
     onSeeTable: () -> Unit,
     onSeeBracket: () -> Unit,
+    onNotifClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -93,6 +94,7 @@ fun HomeScreen(
             onLeadersClick = onLeadersClick,
             onSeeTable = onSeeTable,
             onSeeBracket = onSeeBracket,
+            onNotifClick = onNotifClick,
             modifier = modifier
         )
     }
@@ -191,6 +193,7 @@ private fun HomeContent(
     onLeadersClick: () -> Unit,
     onSeeTable: () -> Unit,
     onSeeBracket: () -> Unit,
+    onNotifClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     PullToRefreshBox(
@@ -206,7 +209,7 @@ private fun HomeContent(
         verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
         item {
-            HomeHeader(modifier = Modifier.padding(horizontal = 16.dp))
+            HomeHeader(onNotifClick = onNotifClick, modifier = Modifier.padding(horizontal = 16.dp))
         }
 
         if (state.live.isNotEmpty()) {
@@ -388,7 +391,7 @@ private fun HomeContent(
 }
 
 @Composable
-private fun HomeHeader(modifier: Modifier = Modifier) {
+private fun HomeHeader(onNotifClick: () -> Unit, modifier: Modifier = Modifier) {
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -412,7 +415,7 @@ private fun HomeHeader(modifier: Modifier = Modifier) {
             )
         }
         Spacer(modifier = Modifier.weight(1f))
-        IconButton(onClick = { }) {
+        IconButton(onClick = onNotifClick) {
             Icon(
                 imageVector = Icons.Outlined.Notifications,
                 contentDescription = "Notificaciones",
