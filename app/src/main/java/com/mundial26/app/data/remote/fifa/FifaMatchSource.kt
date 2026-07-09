@@ -253,8 +253,8 @@ fun parseFifaMatchStats(json: String, homeTeamId: String): List<MatchStat> = run
     list
 }.getOrDefault(emptyList())
 
-/** Jugador de una alineación FIFA: id (= key de stats), nombre, capitán, dorsal y si es titular. */
-data class FifaLineupPlayer(val fifaId: String, val name: String, val captain: Boolean, val shirt: Int?, val starter: Boolean = true)
+/** Jugador de una alineación FIFA: id (= key de stats), nombre, capitán, dorsal, titular y línea (0=GK 1=DEF 2=MED 3=DEL). */
+data class FifaLineupPlayer(val fifaId: String, val name: String, val captain: Boolean, val shirt: Int?, val starter: Boolean = true, val position: Int? = null)
 
 /** Extrae la alineación (Players) del equipo con TLA [tla] del detalle live de un partido. */
 fun parseTeamLineup(json: String, tla: String): List<FifaLineupPlayer> = runCatching {
@@ -275,7 +275,8 @@ fun parseTeamLineup(json: String, tla: String): List<FifaLineupPlayer> = runCatc
                 captain = p["Captain"]?.jsonPrimitive?.content?.toBooleanStrictOrNull() ?: false,
                 shirt = p["ShirtNumber"]?.jsonPrimitive?.content?.toIntOrNull(),
                 // Status 1 = titular en el feed live de FIFA; sin campo → titular (no rompe el roster).
-                starter = p["Status"]?.jsonPrimitive?.content?.toIntOrNull()?.let { it == 1 } ?: true
+                starter = p["Status"]?.jsonPrimitive?.content?.toIntOrNull()?.let { it == 1 } ?: true,
+                position = p["Position"]?.jsonPrimitive?.content?.toIntOrNull()
             )
         }.getOrNull()
     } ?: emptyList()

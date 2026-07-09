@@ -43,7 +43,10 @@ enum class EventKind { GOAL, YELLOW, RED, SUB }
 data class MatchEvent(val min: Int, val kind: EventKind, val side: Char, val player: String) // side 'A'|'B'
 
 /** XI titular confirmado de ambos equipos (FIFA lo publica ~1 h antes del partido). */
-data class LineupPlayer(val name: String, val shirt: Int?, val captain: Boolean = false)
+data class LineupPlayer(
+    val name: String, val shirt: Int?, val captain: Boolean = false,
+    val line: Int? = null   // línea en cancha: 0=arquero, 1=defensa, 2=medio, 3=delantero
+)
 data class MatchLineups(val home: List<LineupPlayer>, val away: List<LineupPlayer>)
 
 data class Match(
