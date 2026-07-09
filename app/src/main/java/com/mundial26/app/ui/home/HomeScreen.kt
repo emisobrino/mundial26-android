@@ -412,21 +412,11 @@ private fun HomeHeader(modifier: Modifier = Modifier) {
             )
         }
         Spacer(modifier = Modifier.weight(1f))
-        Box {
-            IconButton(onClick = { }) {
-                Icon(
-                    imageVector = Icons.Outlined.Notifications,
-                    contentDescription = "Notificaciones",
-                    tint = MundialTheme.colors.textPrimary
-                )
-            }
-            Box(
-                modifier = Modifier
-                    .size(8.dp)
-                    .align(Alignment.TopEnd)
-                    .padding(top = 6.dp, end = 6.dp)
-                    .clip(CircleShape)
-                    .background(MundialTheme.colors.live)
+        IconButton(onClick = { }) {
+            Icon(
+                imageVector = Icons.Outlined.Notifications,
+                contentDescription = "Notificaciones",
+                tint = MundialTheme.colors.textPrimary
             )
         }
     }
