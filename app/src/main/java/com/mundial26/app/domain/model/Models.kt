@@ -47,7 +47,6 @@ data class Match(
     val minuteLabel: String? = null,   // etiqueta base oficial FIFA: "45'", "ET", "90'" (frena en cortes)
     val addedLabel: String? = null,    // descuento del tiempo actual: "+2" (globo azul), null si no hay
     val time: String?,
-    val kickoff: String? = null,       // instante ISO UTC del arranque ("2026-06-11T19:00:00Z"), para alarmas
     val day: String?, val group: String, val stadium: String,
     val teamA: String, val teamB: String,      // códigos (ARG, MEX…)
     val flagA: String, val flagB: String,      // ISO-2

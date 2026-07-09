@@ -32,7 +32,6 @@ fun MatchEntity.toDomain(
         id = id, status = st, minute = deriveMinute(utcDate, st, nowEpochMs),
         time = local?.let { "%02d:%02d".format(it.hour, it.minute) }
             ?: utcDate.takeIf { it.length >= 16 }?.substring(11, 16),
-        kickoff = utcDate,
         day = local?.toLocalDate()?.toString() ?: utcDate.take(10),
         group = prettyGroup(stage, grp), stadium = "",
         teamA = homeTla, teamB = awayTla, flagA = tlaToIso(homeTla), flagB = tlaToIso(awayTla),

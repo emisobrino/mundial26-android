@@ -70,7 +70,6 @@ fun HomeScreen(
     onLeadersClick: () -> Unit,
     onSeeTable: () -> Unit,
     onSeeBracket: () -> Unit,
-    onNotifClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -94,7 +93,6 @@ fun HomeScreen(
             onLeadersClick = onLeadersClick,
             onSeeTable = onSeeTable,
             onSeeBracket = onSeeBracket,
-            onNotifClick = onNotifClick,
             modifier = modifier
         )
     }
@@ -193,7 +191,6 @@ private fun HomeContent(
     onLeadersClick: () -> Unit,
     onSeeTable: () -> Unit,
     onSeeBracket: () -> Unit,
-    onNotifClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     PullToRefreshBox(
@@ -209,7 +206,7 @@ private fun HomeContent(
         verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
         item {
-            HomeHeader(onNotifClick = onNotifClick, modifier = Modifier.padding(horizontal = 16.dp))
+            HomeHeader(modifier = Modifier.padding(horizontal = 16.dp))
         }
 
         if (state.live.isNotEmpty()) {
@@ -391,7 +388,7 @@ private fun HomeContent(
 }
 
 @Composable
-private fun HomeHeader(onNotifClick: () -> Unit, modifier: Modifier = Modifier) {
+private fun HomeHeader(modifier: Modifier = Modifier) {
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -415,11 +412,21 @@ private fun HomeHeader(onNotifClick: () -> Unit, modifier: Modifier = Modifier) 
             )
         }
         Spacer(modifier = Modifier.weight(1f))
-        IconButton(onClick = onNotifClick) {
-            Icon(
-                imageVector = Icons.Outlined.Notifications,
-                contentDescription = "Notificaciones",
-                tint = MundialTheme.colors.textPrimary
+        Box {
+            IconButton(onClick = { }) {
+                Icon(
+                    imageVector = Icons.Outlined.Notifications,
+                    contentDescription = "Notificaciones",
+                    tint = MundialTheme.colors.textPrimary
+                )
+            }
+            Box(
+                modifier = Modifier
+                    .size(8.dp)
+                    .align(Alignment.TopEnd)
+                    .padding(top = 6.dp, end = 6.dp)
+                    .clip(CircleShape)
+                    .background(MundialTheme.colors.live)
             )
         }
     }

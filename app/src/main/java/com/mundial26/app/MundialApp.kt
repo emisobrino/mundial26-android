@@ -13,9 +13,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import com.mundial26.app.ui.components.WorldCupLoader
 import com.mundial26.app.ui.home.HomeUiState
-import com.mundial26.app.notifications.Notif
-import com.mundial26.app.notifications.syncMatchAlarms
-import com.mundial26.app.ui.notifications.NotificationsScreen
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withTimeoutOrNull
@@ -56,14 +53,6 @@ fun MundialApp(container: AppContainer) {
     val currentRoute by navController.currentBackStackEntryAsState()
     val currentRouteStr = currentRoute?.destination?.route
     val uriHandler = androidx.compose.ui.platform.LocalUriHandler.current
-    val appContext = androidx.compose.ui.platform.LocalContext.current.applicationContext
-
-    // Canales de notificación + reprogramar alarmas de partidos al abrir (única oportunidad de
-    // reprogramar tras un reinicio del teléfono, ya que no hay receiver de BOOT).
-    LaunchedEffect(Unit) {
-        Notif.ensureChannels(appContext)
-        runCatching { syncMatchAlarms(appContext) }
-    }
 
     // Las noticias reales del RSS (id = URL) abren directo en el navegador del teléfono;
     // las de muestra (sin URL) siguen yendo al detalle interno.
@@ -152,8 +141,7 @@ fun MundialApp(container: AppContainer) {
                             restoreState = true
                             popUpTo(TopDestination.HOME.route) { saveState = true }
                         }
-                    },
-                    onNotifClick = { navController.navigate(DetailRoutes.NOTIFICATIONS) }
+                    }
                 )
             }
             composable(TopDestination.MATCHES.route) {
@@ -236,9 +224,6 @@ fun MundialApp(container: AppContainer) {
             composable(DetailRoutes.LEADERS) {
                 val vm: LeadersViewModel = viewModel(factory = LeadersViewModel.Factory(container.teamRepository))
                 LeadersScreen(viewModel = vm, onBack = { navController.popBackStack() })
-            }
-            composable(DetailRoutes.NOTIFICATIONS) {
-                NotificationsScreen(onBack = { navController.popBackStack() })
             }
         }
     }

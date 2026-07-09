@@ -33,7 +33,6 @@ object DetailRoutes {
     const val PLAYER_BY_ID = "playerById/{playerId}"
     const val NEWS_DETAIL = "newsDetail/{id}"
     const val LEADERS = "leaders"
-    const val NOTIFICATIONS = "notifications"
 
     fun matchDetail(id: String) = "matchDetail/$id"
     fun teamDetail(id: String) = "teamDetail/$id"
@@ -48,6 +47,5 @@ object DetailRoutes {
             route.startsWith("playerDetail/") ||
             route.startsWith("playerById/") ||
             route.startsWith("newsDetail/") ||
-            route == LEADERS ||
-            route == NOTIFICATIONS)
+            route == LEADERS)
 }
