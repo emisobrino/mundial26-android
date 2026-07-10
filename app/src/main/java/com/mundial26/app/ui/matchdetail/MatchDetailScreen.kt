@@ -79,6 +79,7 @@ import com.mundial26.app.domain.model.Nations
 import com.mundial26.app.domain.model.Star
 import com.mundial26.app.domain.model.WinProbability
 import com.mundial26.app.ui.components.GoalConfetti
+import com.mundial26.app.ui.components.rememberCelebratedScore
 import com.mundial26.app.ui.components.MatchHighlights
 import com.mundial26.app.ui.components.FlagAvatar
 import com.mundial26.app.ui.components.LiveMinuteRow
@@ -683,10 +684,12 @@ private fun MatchHero(match: Match, modifier: Modifier = Modifier) {
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier.weight(1f)
             ) {
-                // ¡Gol!: el marcador nuevo entra rodando desde abajo (250 ms, ease-out).
+                // ¡Gol!: primero cae el confeti y ~0,9 s después el marcador nuevo
+                // entra rodando desde abajo (250 ms, ease-out).
+                val shown = rememberCelebratedScore(match.scoreA, match.scoreB, live = match.status == MatchStatus.LIVE)
                 AnimatedContent(
                     targetState = if (match.status == MatchStatus.UPCOMING) "VS"
-                        else "${match.scoreA ?: 0} - ${match.scoreB ?: 0}",
+                        else "${shown.first} - ${shown.second}",
                     transitionSpec = {
                         (slideInVertically(animationSpec = tween(250, easing = FastOutSlowInEasing)) { it / 2 } +
                             fadeIn(tween(250))) togetherWith

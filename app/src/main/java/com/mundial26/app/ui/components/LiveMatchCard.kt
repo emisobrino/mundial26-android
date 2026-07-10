@@ -95,9 +95,10 @@ fun LiveMatchCard(
                 }
 
                 Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
-                    // ¡Gol!: el marcador nuevo entra rodando desde abajo (250 ms, ease-out).
+                    // ¡Gol!: primero el confeti, ~0,9 s después rueda el marcador nuevo.
+                    val shown = rememberCelebratedScore(match.scoreA, match.scoreB, live = true)
                     AnimatedContent(
-                        targetState = "${match.scoreA ?: 0} - ${match.scoreB ?: 0}",
+                        targetState = "${shown.first} - ${shown.second}",
                         transitionSpec = {
                             (slideInVertically(animationSpec = tween(250, easing = FastOutSlowInEasing)) { it / 2 } +
                                 fadeIn(tween(250))) togetherWith

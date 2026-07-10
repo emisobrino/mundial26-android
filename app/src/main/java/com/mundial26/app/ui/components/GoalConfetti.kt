@@ -21,6 +21,23 @@ import kotlin.math.min
 import kotlin.math.sin
 import kotlin.random.Random
 
+/**
+ * Marcador a MOSTRAR durante un gol: retiene el valor anterior ~0,9 s para que
+ * primero caiga el confeti y recién después ruede el contador. Bajas del marcador
+ * (correcciones) se reflejan al instante; la primera composición no retiene.
+ */
+@Composable
+fun rememberCelebratedScore(scoreA: Int?, scoreB: Int?, live: Boolean): Pair<Int, Int> {
+    val a = scoreA ?: 0
+    val b = scoreB ?: 0
+    var shown by remember { androidx.compose.runtime.mutableStateOf(a to b) }
+    LaunchedEffect(a, b) {
+        if (live && a + b > shown.first + shown.second) kotlinx.coroutines.delay(900)
+        shown = a to b
+    }
+    return shown
+}
+
 /** Papelito de confeti: posición, arranque escalonado, vaivén, giro y color. */
 private class ConfettiPiece(
     val x: Float,          // 0..1 (fracción del ancho)
