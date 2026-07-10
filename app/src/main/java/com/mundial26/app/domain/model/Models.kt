@@ -47,7 +47,10 @@ data class LineupPlayer(
     val name: String, val shirt: Int?, val captain: Boolean = false,
     val line: Int? = null   // línea en cancha: 0=arquero, 1=defensa, 2=medio, 3=delantero
 )
-data class MatchLineups(val home: List<LineupPlayer>, val away: List<LineupPlayer>)
+data class MatchLineups(
+    val home: List<LineupPlayer>, val away: List<LineupPlayer>,
+    val homeCoach: String = "", val awayCoach: String = ""
+)
 
 data class Match(
     val id: String, val status: MatchStatus, val minute: Int?,

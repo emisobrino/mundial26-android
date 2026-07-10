@@ -109,7 +109,8 @@ class DefaultMatchRepository(
             .map { LineupPlayer(it.name, it.shirt, it.captain, it.position) }
         val home = side(m.teamA); val away = side(m.teamB)
         if (home.isEmpty() && away.isEmpty()) return null
-        return MatchLineups(home, away)
+        val coaches = runCatching { sync.coaches() }.getOrDefault(emptyMap())
+        return MatchLineups(home, away, coaches[m.teamA].orEmpty(), coaches[m.teamB].orEmpty())
     }
 
     override suspend fun match(id: String): Match? {

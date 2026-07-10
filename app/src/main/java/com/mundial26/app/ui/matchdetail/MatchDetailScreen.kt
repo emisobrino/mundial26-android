@@ -228,11 +228,11 @@ private fun LineupsSection(match: Match, lineups: MatchLineups, modifier: Modifi
         HorizontalPager(state = pagerState) { page ->
             if (page == 0) PitchLineup(
                 iso = match.flagA, code = match.teamA, players = lineups.home,
-                events = match.events.filter { it.side == 'A' }
+                events = match.events.filter { it.side == 'A' }, coach = lineups.homeCoach
             )
             else PitchLineup(
                 iso = match.flagB, code = match.teamB, players = lineups.away,
-                events = match.events.filter { it.side == 'B' }
+                events = match.events.filter { it.side == 'B' }, coach = lineups.awayCoach
             )
         }
         Spacer(modifier = Modifier.height(10.dp))
@@ -263,7 +263,7 @@ private fun shortName(full: String): String {
 }
 
 @Composable
-private fun PitchLineup(iso: String, code: String, players: List<LineupPlayer>, events: List<MatchEvent> = emptyList(), modifier: Modifier = Modifier) {
+private fun PitchLineup(iso: String, code: String, players: List<LineupPlayer>, events: List<MatchEvent> = emptyList(), coach: String = "", modifier: Modifier = Modifier) {
     // Líneas de la cancha: arquero arriba, delanteros abajo. Sin dato de línea → mediocampo.
     val gk = players.filter { it.line == 0 }
     val def = players.filter { it.line == 1 }
@@ -293,6 +293,17 @@ private fun PitchLineup(iso: String, code: String, players: List<LineupPlayer>, 
                 fontWeight = FontWeight.Bold,
                 color = Color.White
             )
+            if (coach.isNotBlank()) {
+                Spacer(modifier = Modifier.width(10.dp))
+                Text(
+                    text = "DT: ${shortName(coach)}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color(0xFFB7E4C7),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false)
+                )
+            }
             Spacer(modifier = Modifier.weight(1f))
             if (formation.isNotBlank()) Text(
                 text = formation,
@@ -342,7 +353,7 @@ private fun PitchLineup(iso: String, code: String, players: List<LineupPlayer>, 
 private fun PitchPlayer(p: LineupPlayer, events: List<MatchEvent> = emptyList(), modifier: Modifier = Modifier) {
     // Sucesos del partido para este jugador (mismos visuales que la sección EVENTOS).
     fun mine(kind: EventKind) = events.any { it.kind == kind && nameMatches(it.player, p.name) }
-    val scored = mine(EventKind.GOAL)
+    val goals = events.count { it.kind == EventKind.GOAL && nameMatches(it.player, p.name) }
     val red = mine(EventKind.RED)
     val yellow = !red && mine(EventKind.YELLOW)
     // En los cambios el jugador que SALE es el 2º del "Entra ⇄ Sale".
@@ -383,14 +394,24 @@ private fun PitchPlayer(p: LineupPlayer, events: List<MatchEvent> = emptyList(),
                     .clip(RoundedCornerShape(2.dp))
                     .background(if (red) MundialTheme.colors.live else MundialTheme.colors.yellow)
             )
-            if (scored) Image(
-                painter = painterResource(R.drawable.ic_ball_wc),
-                contentDescription = "Gol",
+            if (goals > 0) Row(
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
-                    .offset(x = 5.dp, y = 3.dp)
-                    .size(15.dp)
-            )
+                    .offset(x = if (goals > 1) 13.dp else 5.dp, y = 3.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Image(
+                    painter = painterResource(R.drawable.ic_ball_wc),
+                    contentDescription = "Gol",
+                    modifier = Modifier.size(15.dp)
+                )
+                if (goals > 1) Text(
+                    text = "×$goals",
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+            }
         }
         Spacer(modifier = Modifier.height(4.dp))
         Text(
