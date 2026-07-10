@@ -322,16 +322,30 @@ private fun PitchLineup(iso: String, code: String, players: List<LineupPlayer>, 
         Box(modifier = Modifier.fillMaxWidth()) {
             androidx.compose.foundation.Canvas(modifier = Modifier.matchParentSize()) {
                 val w = size.width
-                // Área grande y chica del arco (arriba, centradas).
-                drawRect(PitchLine, topLeft = androidx.compose.ui.geometry.Offset(w * 0.22f, 0f),
-                    size = androidx.compose.ui.geometry.Size(w * 0.56f, 110f), style = androidx.compose.ui.graphics.drawscope.Stroke(2f))
-                drawRect(PitchLine, topLeft = androidx.compose.ui.geometry.Offset(w * 0.36f, 0f),
-                    size = androidx.compose.ui.geometry.Size(w * 0.28f, 45f), style = androidx.compose.ui.graphics.drawscope.Stroke(2f))
-                // Línea media + círculo central (abajo, insinuado).
+                val stroke = androidx.compose.ui.graphics.drawscope.Stroke(2.5f)
+                // Proporciones reales de media cancha (ancho 68 m): área grande 40,3×16,5 m,
+                // área chica 18,3×5,5 m, penal a 11 m, círculo central r = 9,15 m.
+                val bigW = w * 0.59f; val bigH = w * 0.243f
+                val smallW = w * 0.27f; val smallH = w * 0.081f
+                val r = w * 0.135f
+                val spotY = w * 0.162f
+                drawRect(PitchLine, topLeft = androidx.compose.ui.geometry.Offset((w - bigW) / 2f, 0f),
+                    size = androidx.compose.ui.geometry.Size(bigW, bigH), style = stroke)
+                drawRect(PitchLine, topLeft = androidx.compose.ui.geometry.Offset((w - smallW) / 2f, 0f),
+                    size = androidx.compose.ui.geometry.Size(smallW, smallH), style = stroke)
+                // Punto penal + semicírculo del área (solo el arco que queda fuera del área grande).
+                drawCircle(PitchLine, radius = 5f, center = androidx.compose.ui.geometry.Offset(w / 2f, spotY))
+                drawArc(
+                    color = PitchLine, useCenter = false, style = stroke,
+                    startAngle = 37f, sweepAngle = 106f,
+                    topLeft = androidx.compose.ui.geometry.Offset(w / 2f - r, spotY - r),
+                    size = androidx.compose.ui.geometry.Size(r * 2f, r * 2f)
+                )
+                // Línea media + medio círculo central (abajo).
                 drawLine(PitchLine, androidx.compose.ui.geometry.Offset(0f, size.height),
-                    androidx.compose.ui.geometry.Offset(w, size.height), 2f)
-                drawCircle(PitchLine, radius = 90f, center = androidx.compose.ui.geometry.Offset(w / 2f, size.height),
-                    style = androidx.compose.ui.graphics.drawscope.Stroke(2f))
+                    androidx.compose.ui.geometry.Offset(w, size.height), 2.5f)
+                drawCircle(PitchLine, radius = r, center = androidx.compose.ui.geometry.Offset(w / 2f, size.height),
+                    style = stroke)
             }
             Column(
                 modifier = Modifier
