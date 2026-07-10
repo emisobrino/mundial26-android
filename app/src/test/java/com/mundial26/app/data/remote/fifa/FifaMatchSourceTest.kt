@@ -34,6 +34,22 @@ class FifaMatchSourceTest {
         assertNull(fifaAddedLabel(4, "45'+2'"))
     }
 
+    // ---------- estimatedAddedLabel (descuento estimado con el reloj) ----------
+
+    @Test fun descuento_estimado_cuando_fifa_no_lo_publica() {
+        val ko = "2026-07-09T20:00:00Z"
+        fun at(wallMin: Long) = java.time.Instant.parse(ko).toEpochMilli() + wallMin * 60_000
+        // 2doT: reloj 108' = 15' de entretiempo + 93' de juego → +3.
+        assertEquals("+3", estimatedAddedLabel(5, ko, at(108)))
+        // 2doT: reloj 100' = minuto 85 de juego → sin descuento aún.
+        assertNull(estimatedAddedLabel(5, ko, at(100)))
+        // 1erT: reloj 47' → +2.
+        assertEquals("+2", estimatedAddedLabel(3, ko, at(47)))
+        // Fuera de 1erT/2doT (fin, alargue, penales) no se estima.
+        assertNull(estimatedAddedLabel(10, ko, at(200)))
+        assertNull(estimatedAddedLabel(5, null, at(108)))
+    }
+
     // ---------- parseFifaMinute ----------
 
     @Test fun minuto_simple_y_con_descuento() {

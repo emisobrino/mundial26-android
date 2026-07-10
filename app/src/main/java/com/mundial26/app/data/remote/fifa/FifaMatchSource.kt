@@ -116,6 +116,23 @@ fun fifaAddedLabel(period: Int, matchTime: String?): String? {
 }
 
 /**
+ * Descuento estimado con el reloj para cuando FIFA congela el MatchTime en "45'"/"90'"
+ * sin publicar el añadido: 1erT = minutos de reloj desde el kickoff − 45; 2doT = lo mismo
+ * descontando ~15' de entretiempo. Devuelve "+X" solo pasado el tope del período.
+ * ponytail: si el entretiempo real no duró 15', el conteo corre ±2'; suficiente.
+ */
+fun estimatedAddedLabel(period: Int, kickoffIso: String?, nowMs: Long = System.currentTimeMillis()): String? {
+    val ko = kickoffIso?.let { runCatching { java.time.Instant.parse(it).toEpochMilli() }.getOrNull() } ?: return null
+    val wallMin = ((nowMs - ko) / 60_000L).toInt()
+    val extra = when (period) {
+        3 -> wallMin - 45
+        5 -> wallMin - 15 - 90
+        else -> return null
+    }
+    return if (extra in 1..15) "+$extra" else null
+}
+
+/**
  * Día dado ± 1 (para emparejar un día LOCAL del dispositivo con el día UTC de las
  * fuentes: cerca de medianoche pueden diferir). "2026-07-02" → {01, 02, 03}.
  */
