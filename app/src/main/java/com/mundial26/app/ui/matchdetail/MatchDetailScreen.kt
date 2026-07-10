@@ -297,8 +297,7 @@ private fun PitchLineup(iso: String, code: String, players: List<LineupPlayer>, 
             if (coach.isNotBlank()) {
                 Spacer(modifier = Modifier.width(10.dp))
                 Text(
-                    // Solo el apellido para que entre completo junto a la formación.
-                    text = "DT: ${coach.trim().substringAfterLast(" ")}",
+                    text = "DT: ${shortName(coach)}",
                     style = MaterialTheme.typography.labelSmall,
                     color = Color(0xFFB7E4C7),
                     maxLines = 1,
