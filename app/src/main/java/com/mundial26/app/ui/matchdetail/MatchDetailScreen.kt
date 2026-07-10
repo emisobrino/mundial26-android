@@ -78,6 +78,7 @@ import com.mundial26.app.domain.model.MatchStatus
 import com.mundial26.app.domain.model.Nations
 import com.mundial26.app.domain.model.Star
 import com.mundial26.app.domain.model.WinProbability
+import com.mundial26.app.ui.components.GoalConfetti
 import com.mundial26.app.ui.components.MatchHighlights
 import com.mundial26.app.ui.components.FlagAvatar
 import com.mundial26.app.ui.components.LiveMinuteRow
@@ -296,7 +297,8 @@ private fun PitchLineup(iso: String, code: String, players: List<LineupPlayer>, 
             if (coach.isNotBlank()) {
                 Spacer(modifier = Modifier.width(10.dp))
                 Text(
-                    text = "DT: ${shortName(coach)}",
+                    // Solo el apellido para que entre completo junto a la formación.
+                    text = "DT: ${coach.trim().substringAfterLast(" ")}",
                     style = MaterialTheme.typography.labelSmall,
                     color = Color(0xFFB7E4C7),
                     maxLines = 1,
@@ -658,12 +660,13 @@ private fun StarCard(star: Star, iso: String, code: String, modifier: Modifier =
 
 @Composable
 private fun MatchHero(match: Match, modifier: Modifier = Modifier) {
-    Column(
+    Box(
         modifier = modifier
             .fillMaxWidth()
             .clip(MundialTheme.shapes.large)
             .background(MundialTheme.colors.surfaceDark)
     ) {
+    Column {
         TricolorStripe()
 
         Row(
@@ -739,6 +742,11 @@ private fun MatchHero(match: Match, modifier: Modifier = Modifier) {
                     .padding(bottom = 20.dp)
             )
         }
+    }
+    // Festejo de gol sobre el marcador (solo reacciona cuando el score sube en vivo).
+    if (match.status == MatchStatus.LIVE) {
+        GoalConfetti(scoreA = match.scoreA, scoreB = match.scoreB, modifier = Modifier.matchParentSize())
+    }
     }
 }
 
