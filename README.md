@@ -1,6 +1,6 @@
 # Mundial 26 ⚽
 
-App Android nativa para seguir la **Copa Mundial de la FIFA 2026** (Estados Unidos · México · Canadá). Datos reales del torneo, partidos en vivo, resúmenes en video y notificaciones de goles — todo en un tema oscuro.
+App Android nativa para seguir la **Copa Mundial de la FIFA 2026** (Estados Unidos · México · Canadá). Datos reales del torneo, partidos en vivo, resúmenes en video y notificaciones de goles.
 
 ## Capturas
 
