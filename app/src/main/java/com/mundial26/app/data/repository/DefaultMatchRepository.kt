@@ -8,6 +8,7 @@ import com.mundial26.app.data.mock.MockData
 import com.mundial26.app.data.remote.fifa.FifaLiveInfo
 import com.mundial26.app.data.remote.fifa.FifaMatchSource
 import com.mundial26.app.data.remote.fifa.daysAround
+import com.mundial26.app.data.remote.fifa.estimatedAddedLabel
 import com.mundial26.app.data.remote.openfootball.OpenFootballApi
 import com.mundial26.app.data.remote.openfootball.findEventsFor
 import com.mundial26.app.data.sync.SyncManager
@@ -56,15 +57,24 @@ class DefaultMatchRepository(
             (it.homeTla == teamA && it.awayTla == teamB) || (it.homeTla == teamB && it.awayTla == teamA)
         } ?: return this
         val flipped = info.homeTla != teamA
+        val newScoreA = (if (flipped) info.scoreAway else info.scoreHome) ?: scoreA
+        val newScoreB = (if (flipped) info.scoreHome else info.scoreAway) ?: scoreB
+        // FIFA ya lo da por terminado pero football-data (nuestra DB) sigue en juego:
+        // demotar a Final para no mostrar un minuto derivado sin sentido (ej. "120'").
+        if (info.status == 0 && status != MatchStatus.FINISHED) {
+            return copy(status = MatchStatus.FINISHED, minute = null, minuteLabel = null,
+                addedLabel = null, scoreA = newScoreA, scoreB = newScoreB)
+        }
         val promoted = if (info.inPlay && status != MatchStatus.FINISHED) MatchStatus.LIVE else status
         return copy(
             status = promoted,
             minute = info.minute ?: minute ?: (if (promoted == MatchStatus.LIVE) 1 else null),
             // Etiqueta oficial de FIFA (frena en el ET); el descuento va en el globo azul.
             minuteLabel = info.timeLabel.takeIf { it.isNotBlank() },
-            addedLabel = info.addedLabel,
-            scoreA = (if (flipped) info.scoreAway else info.scoreHome) ?: scoreA,
-            scoreB = (if (flipped) info.scoreHome else info.scoreAway) ?: scoreB
+            // FIFA no siempre publica el descuento: si falta, se estima con el reloj.
+            addedLabel = info.addedLabel ?: estimatedAddedLabel(info.period, kickoff),
+            scoreA = newScoreA,
+            scoreB = newScoreB
         )
     }
 

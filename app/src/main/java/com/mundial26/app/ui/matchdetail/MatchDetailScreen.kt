@@ -199,10 +199,10 @@ private fun MatchDetailContent(state: MatchDetailUiState.Success, modifier: Modi
         if (match.stats.isNotEmpty()) {
             item { StatsSection(stats = match.stats, estimated = match.statsEstimated) }
         }
+        state.lineups?.let { item { LineupsSection(match = match, lineups = it) } }
         if (match.events.isNotEmpty()) {
             item { EventsSection(match = match) }
         }
-        state.lineups?.let { item { LineupsSection(match = match, lineups = it) } }
     }
 }
 
