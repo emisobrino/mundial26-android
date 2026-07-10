@@ -47,12 +47,13 @@ fun LiveMatchCard(
     modifier: Modifier = Modifier,
     onClick: (() -> Unit)? = null
 ) {
-    Column(
+    Box(
         modifier = modifier
             .clip(MundialTheme.shapes.large)
             .background(MundialTheme.colors.surfaceDark)
             .clickable(enabled = onClick != null) { onClick?.invoke() }
     ) {
+    Column {
         Row(modifier = Modifier.fillMaxWidth().height(4.dp)) {
             Box(modifier = Modifier.weight(1f).fillMaxHeight().background(MundialTheme.colors.win))
             Box(modifier = Modifier.weight(1f).fillMaxHeight().background(MundialTheme.colors.live))
@@ -136,6 +137,9 @@ fun LiveMatchCard(
                 )
             }
         }
+    }
+    // Festejo de gol por encima de toda la tarjeta.
+    GoalConfetti(scoreA = match.scoreA, scoreB = match.scoreB, modifier = Modifier.matchParentSize())
     }
 }
 
