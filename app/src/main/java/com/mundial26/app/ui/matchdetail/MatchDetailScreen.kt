@@ -9,6 +9,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -22,6 +23,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -61,8 +63,11 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.ui.res.painterResource
+import com.mundial26.app.R
 import com.mundial26.app.data.mock.FakeMatchRepository
 import com.mundial26.app.data.mock.MockData
+import com.mundial26.app.data.repository.nameMatches
 import com.mundial26.app.domain.model.EventKind
 import com.mundial26.app.domain.model.LineupPlayer
 import com.mundial26.app.domain.model.Match
@@ -221,8 +226,14 @@ private fun LineupsSection(match: Match, lineups: MatchLineups, modifier: Modifi
         )
         Spacer(modifier = Modifier.height(12.dp))
         HorizontalPager(state = pagerState) { page ->
-            if (page == 0) PitchLineup(iso = match.flagA, code = match.teamA, players = lineups.home)
-            else PitchLineup(iso = match.flagB, code = match.teamB, players = lineups.away)
+            if (page == 0) PitchLineup(
+                iso = match.flagA, code = match.teamA, players = lineups.home,
+                events = match.events.filter { it.side == 'A' }
+            )
+            else PitchLineup(
+                iso = match.flagB, code = match.teamB, players = lineups.away,
+                events = match.events.filter { it.side == 'B' }
+            )
         }
         Spacer(modifier = Modifier.height(10.dp))
         // Indicador de página (dos puntos): el equipo visible.
@@ -252,7 +263,7 @@ private fun shortName(full: String): String {
 }
 
 @Composable
-private fun PitchLineup(iso: String, code: String, players: List<LineupPlayer>, modifier: Modifier = Modifier) {
+private fun PitchLineup(iso: String, code: String, players: List<LineupPlayer>, events: List<MatchEvent> = emptyList(), modifier: Modifier = Modifier) {
     // Líneas de la cancha: arquero arriba, delanteros abajo. Sin dato de línea → mediocampo.
     val gk = players.filter { it.line == 0 }
     val def = players.filter { it.line == 1 }
@@ -319,7 +330,7 @@ private fun PitchLineup(iso: String, code: String, players: List<LineupPlayer>, 
                     // Celdas de ancho igual: los círculos quedan en grilla pareja aunque
                     // los nombres midan distinto.
                     Row(modifier = Modifier.fillMaxWidth()) {
-                        line.forEach { p -> PitchPlayer(p, modifier = Modifier.weight(1f)) }
+                        line.forEach { p -> PitchPlayer(p, events = events, modifier = Modifier.weight(1f)) }
                     }
                 }
             }
@@ -328,20 +339,57 @@ private fun PitchLineup(iso: String, code: String, players: List<LineupPlayer>, 
 }
 
 @Composable
-private fun PitchPlayer(p: LineupPlayer, modifier: Modifier = Modifier) {
+private fun PitchPlayer(p: LineupPlayer, events: List<MatchEvent> = emptyList(), modifier: Modifier = Modifier) {
+    // Sucesos del partido para este jugador (mismos visuales que la sección EVENTOS).
+    fun mine(kind: EventKind) = events.any { it.kind == kind && nameMatches(it.player, p.name) }
+    val scored = mine(EventKind.GOAL)
+    val red = mine(EventKind.RED)
+    val yellow = !red && mine(EventKind.YELLOW)
+    // En los cambios el jugador que SALE es el 2º del "Entra ⇄ Sale".
+    val subbedOut = events.any {
+        it.kind == EventKind.SUB && nameMatches(it.player.substringAfter("⇄").trim(), p.name)
+    }
+
     Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
-        Box(
-            modifier = Modifier
-                .size(38.dp)
-                .clip(CircleShape)
-                .background(Color(0xFF12331F)),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = p.shirt?.toString() ?: "–",
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.Bold,
-                color = Color.White
+        Box {
+            Box(
+                modifier = Modifier
+                    .size(38.dp)
+                    .clip(CircleShape)
+                    .background(Color(0xFF12331F)),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = p.shirt?.toString() ?: "–",
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+            }
+            if (subbedOut) Icon(
+                imageVector = Icons.Filled.ArrowDownward,
+                contentDescription = "Sale",
+                tint = MundialTheme.colors.live,
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .offset(x = (-5).dp, y = (-3).dp)
+                    .size(14.dp)
+            )
+            if (yellow || red) Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .offset(x = 4.dp, y = (-3).dp)
+                    .size(width = 9.dp, height = 13.dp)
+                    .clip(RoundedCornerShape(2.dp))
+                    .background(if (red) MundialTheme.colors.live else MundialTheme.colors.yellow)
+            )
+            if (scored) Image(
+                painter = painterResource(R.drawable.ic_ball_wc),
+                contentDescription = "Gol",
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .offset(x = 5.dp, y = 3.dp)
+                    .size(15.dp)
             )
         }
         Spacer(modifier = Modifier.height(4.dp))
