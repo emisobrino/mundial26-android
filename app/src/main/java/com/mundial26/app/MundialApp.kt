@@ -96,12 +96,21 @@ fun MundialApp(container: AppContainer) {
     // Intro a pantalla completa en el arranque en frío: se mantiene hasta que Home esté
     // completamente listo, incluido el carrusel de resúmenes (highlightsReady), para que todo
     // aparezca a la vez. Mínimo visible ~2,5 s y tope de 12 s por si la red va lenta.
+    // Sin conexión los resúmenes nunca llegan: alcanza con que Home salga de Loading (caché).
     var booting by remember { mutableStateOf(true) }
     LaunchedEffect(Unit) {
+        val online = runCatching {
+            val cm = appContext.getSystemService(android.content.Context.CONNECTIVITY_SERVICE)
+                as android.net.ConnectivityManager
+            cm.activeNetwork != null
+        }.getOrDefault(true)
         val start = System.currentTimeMillis()
         runCatching {
-            withTimeoutOrNull(12000) {
-                homeViewModel.uiState.first { it is HomeUiState.Success && it.highlightsReady }
+            withTimeoutOrNull(if (online) 12000 else 5000) {
+                homeViewModel.uiState.first {
+                    if (online) it is HomeUiState.Success && it.highlightsReady
+                    else it !is HomeUiState.Loading
+                }
             }
         }
         val elapsed = System.currentTimeMillis() - start
