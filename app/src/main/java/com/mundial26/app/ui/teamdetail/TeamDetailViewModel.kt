@@ -33,11 +33,17 @@ class TeamDetailViewModel(
         _uiState.value = TeamDetailUiState.Loading
         viewModelScope.launch {
             try {
-                val team = teamRepository.team(teamId)
-                _uiState.value = if (team != null) {
-                    TeamDetailUiState.Success(team)
+                // Primer render al instante con el plantel de la caché local; el enriquecido
+                // FIFA (goles/tarjetas/capitán reales + DT) llega en segundo plano y actualiza.
+                val base = teamRepository.teamBase(teamId)
+                _uiState.value = if (base != null) {
+                    TeamDetailUiState.Success(base)
                 } else {
                     TeamDetailUiState.Error("Equipo no encontrado")
+                    return@launch
+                }
+                runCatching { teamRepository.team(teamId) }.getOrNull()?.let {
+                    _uiState.value = TeamDetailUiState.Success(it)
                 }
             } catch (e: Exception) {
                 _uiState.value = TeamDetailUiState.Error(e.message ?: "Error al cargar el equipo")

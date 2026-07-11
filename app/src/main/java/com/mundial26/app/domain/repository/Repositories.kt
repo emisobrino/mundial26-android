@@ -19,6 +19,8 @@ interface TeamRepository {
     suspend fun featured(): Team
     suspend fun groups(): List<Group>
     suspend fun team(id: String): Team?
+    /** Versión rápida de [team]: plantel de la caché local SIN enriquecer con FIFA (para primer render). */
+    suspend fun teamBase(id: String): Team? = team(id)
     /** Jugador del plantel por su id de Room (para el detalle de jugador navegable). */
     suspend fun player(playerId: Long): Player? = null
     /** Club actual y dorsal del jugador (red, cacheado); null si no hay dato. */

@@ -58,6 +58,13 @@ class DefaultTeamRepository(
         return standingDao.all().toGroups().ifEmpty { MockData.groups }
     }
 
+    override suspend fun teamBase(id: String): Team? {
+        val team = teams().firstOrNull { it.id == id || it.code.equals(id, true) } ?: return null
+        // Solo Room + editorial: sin FIFA ni coach (red), para que la pantalla abra al instante.
+        val squad = applyPositionOverrides(team.code, playerDao.byTeam(team.code).map { it.toPlayer() })
+        return team.copy(squad = squad)
+    }
+
     override suspend fun team(id: String): Team? {
         val team = teams().firstOrNull { it.id == id || it.code.equals(id, true) } ?: return null
         val squad = playerDao.byTeam(team.code).map { it.toPlayer() }
