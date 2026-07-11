@@ -36,11 +36,17 @@ class YoutubeHighlightsSource(
         // pero sin colgarnos indefinidamente si la red va lenta.
         .connectTimeout(6, TimeUnit.SECONDS)
         .readTimeout(9, TimeUnit.SECONDS)
-        .build()
+        .build(),
+    // Caché persistente opcional: con prefs, la próxima apertura de la app resuelve los
+    // resúmenes sin scraping (el intro se acorta de ~12 s a lo que tarde el resto).
+    private val prefs: android.content.SharedPreferences? = null
 ) {
     // Solo se cachean resultados exitosos: un fallo transitorio no debe deshabilitar el resumen
     // para toda la sesión (se reintenta en la próxima carga/refresh).
-    private val cache = mutableMapOf<String, String>()
+    // ponytail: el id cacheado no expira; si ESPN sube un resumen mejor después, queda el primero.
+    private val cache = mutableMapOf<String, String>().apply {
+        prefs?.all?.forEach { (k, v) -> if (v is String) put(k, v) }
+    }
 
     suspend fun firstVideoId(query: String): String? = withContext(Dispatchers.IO) {
         cache[query]?.let { return@withContext it }
@@ -56,7 +62,10 @@ class YoutubeHighlightsSource(
             // Devolver el primero (en orden de prioridad) que permita embeber; si ninguno, el primero.
             checks.firstOrNull { it.second }?.first ?: ordered.first().first
         }.getOrNull()
-        if (id != null) cache[query] = id
+        if (id != null) {
+            cache[query] = id
+            prefs?.edit()?.putString(query, id)?.apply()
+        }
         id
     }
 

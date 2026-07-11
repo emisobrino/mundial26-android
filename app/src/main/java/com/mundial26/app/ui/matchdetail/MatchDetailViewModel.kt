@@ -36,7 +36,8 @@ sealed interface MatchDetailUiState {
 class MatchDetailViewModel(
     private val matchRepository: MatchRepository,
     private val teamRepository: TeamRepository,
-    private val matchId: String
+    private val matchId: String,
+    private val highlights: YoutubeHighlightsSource = YoutubeHighlightsSource()
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<MatchDetailUiState>(MatchDetailUiState.Loading)
@@ -44,8 +45,6 @@ class MatchDetailViewModel(
 
     private val _isRefreshing = MutableStateFlow(false)
     val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
-
-    private val highlights = YoutubeHighlightsSource()
 
     /** Pull-to-refresh: recarga el partido (marcador, stats, timeline) sin el spinner de pantalla. */
     fun refresh() {
@@ -140,8 +139,11 @@ class MatchDetailViewModel(
     }
 
     companion object {
-        fun Factory(matchRepository: MatchRepository, teamRepository: TeamRepository, matchId: String) = viewModelFactory {
-            initializer { MatchDetailViewModel(matchRepository, teamRepository, matchId) }
+        fun Factory(
+            matchRepository: MatchRepository, teamRepository: TeamRepository, matchId: String,
+            highlights: YoutubeHighlightsSource = YoutubeHighlightsSource()
+        ) = viewModelFactory {
+            initializer { MatchDetailViewModel(matchRepository, teamRepository, matchId, highlights) }
         }
     }
 }

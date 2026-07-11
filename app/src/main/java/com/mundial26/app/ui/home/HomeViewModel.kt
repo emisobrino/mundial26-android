@@ -57,7 +57,8 @@ sealed interface HomeUiState {
 class HomeViewModel(
     private val matchRepository: MatchRepository,
     private val teamRepository: TeamRepository,
-    private val newsRepository: NewsRepository
+    private val newsRepository: NewsRepository,
+    private val highlightsSource: YoutubeHighlightsSource = YoutubeHighlightsSource()
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<HomeUiState>(HomeUiState.Loading)
@@ -65,8 +66,6 @@ class HomeViewModel(
 
     private val _isRefreshing = MutableStateFlow(false)
     val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
-
-    private val highlightsSource = YoutubeHighlightsSource()
 
     /** Resuelve (en paralelo, cacheado) el video de resumen de los resultados recientes. */
     private suspend fun resolveHighlights(recent: List<Match>): List<MatchHighlight> = coroutineScope {
@@ -174,10 +173,11 @@ class HomeViewModel(
         fun Factory(
             matchRepository: MatchRepository,
             teamRepository: TeamRepository,
-            newsRepository: NewsRepository
+            newsRepository: NewsRepository,
+            highlightsSource: YoutubeHighlightsSource = YoutubeHighlightsSource()
         ) = viewModelFactory {
             initializer {
-                HomeViewModel(matchRepository, teamRepository, newsRepository)
+                HomeViewModel(matchRepository, teamRepository, newsRepository, highlightsSource)
             }
         }
     }

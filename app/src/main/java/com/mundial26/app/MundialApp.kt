@@ -88,7 +88,8 @@ fun MundialApp(container: AppContainer) {
         factory = HomeViewModel.Factory(
             container.matchRepository,
             container.teamRepository,
-            container.newsRepository
+            container.newsRepository,
+            container.youtubeHighlights
         )
     )
 
@@ -193,7 +194,7 @@ fun MundialApp(container: AppContainer) {
             ) { entry ->
                 val id = entry.arguments?.getString(DetailRoutes.MATCH_ARG).orEmpty()
                 val vm: MatchDetailViewModel = viewModel(
-                    factory = MatchDetailViewModel.Factory(container.matchRepository, container.teamRepository, id)
+                    factory = MatchDetailViewModel.Factory(container.matchRepository, container.teamRepository, id, container.youtubeHighlights)
                 )
                 MatchDetailScreen(viewModel = vm, onBack = { navController.popBackStack() })
             }
