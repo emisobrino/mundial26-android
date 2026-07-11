@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import com.mundial26.app.data.editorial.EditorialSource
 import com.mundial26.app.data.net.tlaToIso
 import com.mundial26.app.data.remote.fifa.FifaStatsSource
 import com.mundial26.app.data.remote.sportsdb.SportsDbSource
@@ -105,7 +106,8 @@ class PlayerDetailViewModel private constructor(
             rating = st.stats.rating, club = club, marketValue = st.stats.marketValue,
             caps = profile?.caps, intlGoals = profile?.intlGoals,
             heightCm = profile?.heightCm, weightKg = profile?.weightKg,
-            preferredFoot = profile?.preferredFoot,
+            // FIFA manda 0 cuando no conoce el pie: solo 1/2 son datos reales.
+            preferredFoot = profile?.preferredFoot?.takeIf { it in 1..2 } ?: EditorialSource.preferredFoot(st.name),
             isStar = true
         )
     }
@@ -133,7 +135,7 @@ class PlayerDetailViewModel private constructor(
             rating = 0.0, club = club, marketValue = "",
             caps = profile?.caps, intlGoals = profile?.intlGoals,
             heightCm = profile?.heightCm, weightKg = profile?.weightKg,
-            preferredFoot = profile?.preferredFoot
+            preferredFoot = profile?.preferredFoot?.takeIf { it in 1..2 } ?: EditorialSource.preferredFoot(p.name)
         )
     }
 

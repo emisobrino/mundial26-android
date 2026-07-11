@@ -397,6 +397,15 @@ object EditorialSource {
 
     /** Cantidad de Copas del Mundo de una selección (0 = no campeón). */
     fun titles(tla: String): Int = worldCupTitles[tla.uppercase()] ?: 0
+
+    /** Pie hábil curado para cuando FIFA no lo informa (1 = derecho, 2 = izquierdo). */
+    private val preferredFootByName = mapOf(
+        "messi" to 2
+    )
+
+    /** Pie hábil editorial por nombre de jugador; null si no hay dato curado. */
+    fun preferredFoot(playerName: String): Int? =
+        preferredFootByName.entries.firstOrNull { playerName.lowercase().contains(it.key) }?.value
 }
 
 /** Fila curada del ranking de asistidores (nombre + selección TLA + asistencias). */
