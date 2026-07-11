@@ -34,6 +34,16 @@ class FifaMatchSourceTest {
         assertNull(fifaAddedLabel(4, "45'+2'"))
     }
 
+    // ---------- runningMinuteLabel (globo rojo corriendo en el descuento) ----------
+
+    @Test fun minuto_corre_durante_el_descuento() {
+        assertEquals("47'", runningMinuteLabel("45'", "+2"))
+        assertEquals("95'", runningMinuteLabel("90'", "+5"))
+        // Sin descuento o etiqueta no numérica: queda igual.
+        assertEquals("63'", runningMinuteLabel("63'", null))
+        assertEquals("ET", runningMinuteLabel("ET", "+2"))
+    }
+
     // ---------- estimatedAddedLabel (descuento estimado con el reloj) ----------
 
     @Test fun descuento_estimado_cuando_fifa_no_lo_publica() {

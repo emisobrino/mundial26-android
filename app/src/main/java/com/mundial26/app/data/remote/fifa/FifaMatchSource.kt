@@ -141,6 +141,16 @@ fun daysAround(day: String?): Set<String> {
     return setOf(d.minusDays(1).toString(), d.toString(), d.plusDays(1).toString())
 }
 
+/**
+ * Globo rojo corriendo durante el descuento: base "45'" + añadido "+2" → "47'".
+ * Etiquetas no numéricas ("ET", "Penales") o sin añadido quedan igual.
+ */
+fun runningMinuteLabel(baseLabel: String, added: String?): String {
+    val base = baseLabel.removeSuffix("'").toIntOrNull() ?: return baseLabel
+    val extra = added?.removePrefix("+")?.toIntOrNull() ?: return baseLabel
+    return "${base + extra}'"
+}
+
 /** "9'" → 9; "90'+2'" → 92; null/raro → null. */
 fun parseFifaMinute(raw: String?): Int? {
     if (raw.isNullOrBlank()) return null

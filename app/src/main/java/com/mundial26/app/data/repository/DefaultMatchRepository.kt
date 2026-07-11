@@ -9,6 +9,7 @@ import com.mundial26.app.data.remote.fifa.FifaLiveInfo
 import com.mundial26.app.data.remote.fifa.FifaMatchSource
 import com.mundial26.app.data.remote.fifa.daysAround
 import com.mundial26.app.data.remote.fifa.estimatedAddedLabel
+import com.mundial26.app.data.remote.fifa.runningMinuteLabel
 import com.mundial26.app.data.remote.openfootball.OpenFootballApi
 import com.mundial26.app.data.remote.openfootball.findEventsFor
 import com.mundial26.app.data.sync.SyncManager
@@ -66,13 +67,15 @@ class DefaultMatchRepository(
                 addedLabel = null, scoreA = newScoreA, scoreB = newScoreB)
         }
         val promoted = if (info.inPlay && status != MatchStatus.FINISHED) MatchStatus.LIVE else status
+        // FIFA no siempre publica el descuento: si falta, se estima con el reloj.
+        val added = info.addedLabel ?: estimatedAddedLabel(info.period, kickoff)
         return copy(
             status = promoted,
             minute = info.minute ?: minute ?: (if (promoted == MatchStatus.LIVE) 1 else null),
-            // Etiqueta oficial de FIFA (frena en el ET); el descuento va en el globo azul.
-            minuteLabel = info.timeLabel.takeIf { it.isNotBlank() },
-            // FIFA no siempre publica el descuento: si falta, se estima con el reloj.
-            addedLabel = info.addedLabel ?: estimatedAddedLabel(info.period, kickoff),
+            // Globo rojo corriendo también en el descuento (45' + "+2" → 47');
+            // el añadido queda además en el globo azul.
+            minuteLabel = info.timeLabel.takeIf { it.isNotBlank() }?.let { runningMinuteLabel(it, added) },
+            addedLabel = added,
             scoreA = newScoreA,
             scoreB = newScoreB
         )
