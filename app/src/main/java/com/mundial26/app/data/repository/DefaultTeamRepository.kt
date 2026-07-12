@@ -204,7 +204,14 @@ fun nameMatches(playerName: String, starName: String): Boolean {
     if (pc.isNotEmpty() && pc == sc) return true
     val pLast = p.substringAfterLast(' ')
     val sLast = s.substringAfterLast(' ')
-    if (pLast.length >= 3 && pLast == sLast) return true
+    // Apellido igual solo alcanza si los nombres de pila no se contradicen: "Lautaro
+    // Martinez" ≠ "Emiliano Martinez" (caso real: gol adjudicado al arquero homónimo).
+    if (pLast.length >= 3 && pLast == sLast) {
+        val pFirst = p.substringBefore(' ')
+        val sFirst = s.substringBefore(' ')
+        if (pFirst == pLast || sFirst == sLast ||
+            pFirst.startsWith(sFirst) || sFirst.startsWith(pFirst)) return true
+    }
     // Iniciales ("L. Messi" ↔ "Lionel Messi"): mismo nº de tokens, cada uno prefijo del otro.
     val pt = pc.split(' ').filter { it.isNotBlank() }
     val st = sc.split(' ').filter { it.isNotBlank() }
