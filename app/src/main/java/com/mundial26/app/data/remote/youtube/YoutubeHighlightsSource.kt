@@ -13,17 +13,31 @@ import java.util.concurrent.TimeUnit
 private const val UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36"
 private val VIDEO_ID = Regex("\"videoId\":\"([A-Za-z0-9_-]{11})\"")
 private val OWNER = Regex("\"ownerText\":\\{\"runs\":\\[\\{\"text\":\"(.*?)\"")
+private val TITLE = Regex("\"title\":\\{\"runs\":\\[\\{\"text\":\"(.*?)\"")
 
-/** (videoId, canal) de cada resultado de YouTube, en orden y sin duplicados. */
-fun parseCandidates(html: String): List<Pair<String, String>> {
-    val out = LinkedHashMap<String, String>()
+data class YtCandidate(val id: String, val channel: String, val title: String)
+
+/** Candidatos (id, canal, título) de cada resultado de YouTube, en orden y sin duplicados. */
+fun parseCandidates(html: String): List<YtCandidate> {
+    val out = LinkedHashMap<String, YtCandidate>()
     for (block in html.split("\"videoRenderer\"").drop(1)) {
         val id = VIDEO_ID.find(block)?.groupValues?.get(1) ?: continue
         val channel = OWNER.find(block)?.groupValues?.get(1) ?: ""
-        out.putIfAbsent(id, channel)
+        val title = TITLE.find(block)?.groupValues?.get(1) ?: ""
+        out.putIfAbsent(id, YtCandidate(id, channel, title))
     }
-    return out.entries.map { it.key to it.value }
+    return out.values.toList()
 }
+
+/**
+ * Ranking: el RESUMEN del partido antes que clips sueltos ("¡GOL DE...!") — ESPN sube
+ * ambos y el primer resultado suele ser el clip. Título "resumen" pesa más que el canal.
+ */
+fun rankCandidates(candidates: List<YtCandidate>): List<YtCandidate> =
+    candidates.sortedByDescending { c ->
+        (if (c.title.contains("resumen", ignoreCase = true)) 2 else 0) +
+            (if (c.channel.contains("ESPN", ignoreCase = true)) 1 else 0)
+    }
 
 /**
  * Busca en YouTube el resumen de un partido y devuelve el id de un video **embebible**,
@@ -53,14 +67,13 @@ class YoutubeHighlightsSource(
         val id = runCatching {
             val candidates = parseCandidates(searchHtml(query))
             if (candidates.isEmpty()) return@runCatching null
-            // Prioridad: canales ESPN primero (orden estable), luego el resto.
-            val ordered = candidates.sortedByDescending { it.second.contains("ESPN", ignoreCase = true) }.take(4)
+            val ordered = rankCandidates(candidates).take(4)
             // Comprobar embebibilidad en paralelo (antes eran hasta 6 peticiones oEmbed en serie).
             val checks = coroutineScope {
-                ordered.map { c -> async { c.first to isEmbeddable(c.first) } }.awaitAll()
+                ordered.map { c -> async { c.id to isEmbeddable(c.id) } }.awaitAll()
             }
             // Devolver el primero (en orden de prioridad) que permita embeber; si ninguno, el primero.
-            checks.firstOrNull { it.second }?.first ?: ordered.first().first
+            checks.firstOrNull { it.second }?.first ?: ordered.first().id
         }.getOrNull()
         if (id != null) {
             cache[query] = id

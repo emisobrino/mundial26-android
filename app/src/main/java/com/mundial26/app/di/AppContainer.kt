@@ -35,6 +35,7 @@ class DefaultAppContainer(context: Context) : AppContainer {
     override val newsRepository: NewsRepository by lazy { DefaultNewsRepository(NewsRssSource()) }
     // Instancia única (Inicio + detalle de partido comparten caché) con persistencia en disco.
     override val youtubeHighlights: YoutubeHighlightsSource by lazy {
-        YoutubeHighlightsSource(prefs = appContext.getSharedPreferences("yt_highlights", Context.MODE_PRIVATE))
+        // "_v2": el ranking cambió (resumen > clip de gol); el caché viejo tenía ids de clips.
+        YoutubeHighlightsSource(prefs = appContext.getSharedPreferences("yt_highlights_v2", Context.MODE_PRIVATE))
     }
 }
