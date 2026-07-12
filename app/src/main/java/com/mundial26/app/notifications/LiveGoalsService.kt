@@ -65,6 +65,11 @@ class LiveGoalsService : Service() {
                     // 1) Aviso inmediato por cambio de marcador (aún sin goleador).
                     val score = (m.scoreA ?: 0) to (m.scoreB ?: 0)
                     val prev = lastScores[m.id]
+                    // Gol anulado (VAR) o corrección del feed: retirar el aviso del gol fantasma.
+                    if (prev != null && score.first + score.second < prev.first + prev.second) {
+                        androidx.core.app.NotificationManagerCompat.from(this@LiveGoalsService)
+                            .cancel(goalNotifId(m.id, prev.first + prev.second))
+                    }
                     if (prev != null && !firstPass && score.first + score.second > prev.first + prev.second) {
                         val country = if (score.first > prev.first) m.teamA else m.teamB
                         Notif.post(
