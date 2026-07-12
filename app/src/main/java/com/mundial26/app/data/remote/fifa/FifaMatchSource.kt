@@ -224,7 +224,8 @@ fun parseFifaTimeline(json: String, homeTeamId: String): List<MatchEvent> =
     AppJson.parseToJsonElement(json).jsonObject["Event"]?.jsonArray?.mapNotNull { el ->
         runCatching {
             val e = el.jsonObject
-            val kind = when (e["Type"]?.jsonPrimitive?.content?.toIntOrNull()) {
+            val type = e["Type"]?.jsonPrimitive?.content?.toIntOrNull() ?: -1
+            val kind = when (type) {
                 0, 34, 41 -> EventKind.GOAL   // gol normal, en propia puerta, de penal
                 2 -> EventKind.YELLOW
                 3, 4 -> EventKind.RED         // expulsión directa / por doble amarilla
@@ -235,8 +236,7 @@ fun parseFifaTimeline(json: String, homeTeamId: String): List<MatchEvent> =
             val desc = e["EventDescription"]?.jsonArray?.firstOrNull()
                 ?.jsonObject?.get("Description")?.jsonPrimitive?.content ?: ""
             val side = if (e["IdTeam"]?.jsonPrimitive?.content == homeTeamId) 'A' else 'B'
-            val type = e["Type"]?.jsonPrimitive?.content?.toIntOrNull() ?: -1
-            MatchEvent(min = min, kind = kind, side = side, player = extractEventPlayer(type, desc))
+            MatchEvent(min = min, kind = kind, side = side, player = extractEventPlayer(type, desc), secondYellow = type == 4)
         }.getOrNull()
     } ?: emptyList()
 
@@ -287,7 +287,14 @@ fun parseFifaMatchStats(json: String, homeTeamId: String): List<MatchStat> = run
     add("Faltas", "FoulsFor")
     add("Posición adelantada", "Offsides")
     add("Amarillas", "YellowCards")
-    add("Rojas", "RedCards")
+    // Rojas: en vivo el feed deja RedCards en 0 y cuenta la expulsión por doble
+    // amarilla solo en IndirectRedCards; tomamos el máximo de ambas cuentas.
+    fun reds(s: Map<String, Double>) = maxOf(
+        s["RedCards"] ?: 0.0, (s["DirectRedCards"] ?: 0.0) + (s["IndirectRedCards"] ?: 0.0)
+    )
+    if (home.containsKey("RedCards") && away.containsKey("RedCards")) {
+        list += MatchStat("Rojas", Math.round(reds(home)).toInt(), Math.round(reds(away)).toInt())
+    }
     list
 }.getOrDefault(emptyList())
 

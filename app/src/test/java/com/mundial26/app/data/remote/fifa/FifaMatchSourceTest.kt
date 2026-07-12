@@ -103,6 +103,7 @@ class FifaMatchSourceTest {
         assertEquals(72, evs[0].min)
         assertEquals("Breel Embolo", evs[0].player)
         assertEquals('B', evs[0].side)
+        assertTrue(evs[0].secondYellow)
     }
 
     @Test fun extrae_cambio_con_ambos_jugadores() {
@@ -345,6 +346,19 @@ class FifaMatchSourceTest {
         assertEquals(0 to 2, byLabel["Amarillas"])
         assertEquals(0 to 1, byLabel["Rojas"])
         assertEquals(10, stats.size)
+    }
+
+    @Test fun roja_por_doble_amarilla_cuenta_en_stats() {
+        // Caso real ARG-SUI en vivo: RedCards quedó en 0 y la expulsión de Embolo
+        // vino solo como IndirectRedCards.
+        val json = """
+            {
+              "1": [["YellowCards",3,false],["RedCards",0,false],["DirectRedCards",0,false],["IndirectRedCards",0,false]],
+              "2": [["YellowCards",2,false],["RedCards",0,false],["DirectRedCards",0,false],["IndirectRedCards",1,false]]
+            }
+        """.trimIndent()
+        val byLabel = parseFifaMatchStats(json, homeTeamId = "1").associate { it.label to (it.a to it.b) }
+        assertEquals(0 to 1, byLabel["Rojas"])
     }
 
     @Test fun stats_sin_equipo_local_devuelve_vacio() {

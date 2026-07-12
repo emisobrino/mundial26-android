@@ -371,6 +371,7 @@ private fun PitchPlayer(p: LineupPlayer, events: List<MatchEvent> = emptyList(),
     fun mine(kind: EventKind) = events.any { it.kind == kind && nameMatches(it.player, p.name) }
     val goals = events.count { it.kind == EventKind.GOAL && nameMatches(it.player, p.name) }
     val red = mine(EventKind.RED)
+    val secondYellow = events.any { it.kind == EventKind.RED && it.secondYellow && nameMatches(it.player, p.name) }
     val yellow = !red && mine(EventKind.YELLOW)
     // En los cambios el jugador que SALE es el 2º del "Entra ⇄ Sale".
     val subbedOut = events.any {
@@ -402,14 +403,35 @@ private fun PitchPlayer(p: LineupPlayer, events: List<MatchEvent> = emptyList(),
                     .offset(x = (-5).dp, y = (-3).dp)
                     .size(14.dp)
             )
-            if (yellow || red) Box(
+            // Doble amarilla: amarilla ×2 + roja; si no, una sola tarjeta.
+            if (yellow || red) Row(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
-                    .offset(x = 4.dp, y = (-3).dp)
-                    .size(width = 9.dp, height = 13.dp)
-                    .clip(RoundedCornerShape(2.dp))
-                    .background(if (red) MundialTheme.colors.live else MundialTheme.colors.yellow)
-            )
+                    .offset(x = if (secondYellow) 18.dp else 4.dp, y = (-3).dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(1.dp)
+            ) {
+                if (secondYellow) {
+                    Box(
+                        modifier = Modifier
+                            .size(width = 9.dp, height = 13.dp)
+                            .clip(RoundedCornerShape(2.dp))
+                            .background(MundialTheme.colors.yellow)
+                    )
+                    Text(
+                        text = "×2",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                }
+                Box(
+                    modifier = Modifier
+                        .size(width = 9.dp, height = 13.dp)
+                        .clip(RoundedCornerShape(2.dp))
+                        .background(if (red) MundialTheme.colors.live else MundialTheme.colors.yellow)
+                )
+            }
             if (goals > 0) Row(
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
@@ -942,18 +964,25 @@ private fun EventContent(event: MatchEvent, isSideA: Boolean, modifier: Modifier
         {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 if (isSideA) {
-                    EventIcon(kind = event.kind)
+                    EventIcon(kind = event.kind, secondYellow = event.secondYellow)
                     Spacer(modifier = Modifier.width(8.dp))
                 }
-                Text(
-                    text = event.player,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MundialTheme.colors.textPrimary,
-                    textAlign = if (isSideA) TextAlign.Start else TextAlign.End
-                )
+                Column(horizontalAlignment = if (isSideA) Alignment.Start else Alignment.End) {
+                    Text(
+                        text = event.player,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MundialTheme.colors.textPrimary,
+                        textAlign = if (isSideA) TextAlign.Start else TextAlign.End
+                    )
+                    if (event.secondYellow) Text(
+                        text = "Segunda amarilla",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MundialTheme.colors.textTertiary
+                    )
+                }
                 if (!isSideA) {
                     Spacer(modifier = Modifier.width(8.dp))
-                    EventIcon(kind = event.kind)
+                    EventIcon(kind = event.kind, secondYellow = event.secondYellow)
                 }
             }
         }
@@ -1013,7 +1042,7 @@ private fun SubPlayers(inName: String, outName: String, isSideA: Boolean, modifi
 
 /** Icono por tipo de evento: pelota (gol), tarjeta amarilla/roja, flechas (cambio). */
 @Composable
-private fun EventIcon(kind: EventKind, modifier: Modifier = Modifier) {
+private fun EventIcon(kind: EventKind, modifier: Modifier = Modifier, secondYellow: Boolean = false) {
     when (kind) {
         EventKind.GOAL -> Icon(
             imageVector = Icons.Outlined.SportsSoccer,
@@ -1027,7 +1056,23 @@ private fun EventIcon(kind: EventKind, modifier: Modifier = Modifier) {
                 .clip(RoundedCornerShape(2.dp))
                 .background(MundialTheme.colors.yellow)
         )
-        EventKind.RED -> Box(
+        // Doble amarilla: la amarilla asomando detrás de la roja.
+        EventKind.RED -> if (secondYellow) Box(modifier = modifier.size(width = 17.dp, height = 15.dp)) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.CenterEnd)
+                    .size(width = 11.dp, height = 14.dp)
+                    .clip(RoundedCornerShape(2.dp))
+                    .background(MundialTheme.colors.yellow)
+            )
+            Box(
+                modifier = Modifier
+                    .align(Alignment.CenterStart)
+                    .size(width = 11.dp, height = 15.dp)
+                    .clip(RoundedCornerShape(2.dp))
+                    .background(MundialTheme.colors.live)
+            )
+        } else Box(
             modifier = modifier
                 .size(width = 11.dp, height = 15.dp)
                 .clip(RoundedCornerShape(2.dp))

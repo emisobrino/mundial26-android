@@ -40,7 +40,8 @@ data class Team(
 
 data class MatchStat(val label: String, val a: Int, val b: Int)
 enum class EventKind { GOAL, YELLOW, RED, SUB }
-data class MatchEvent(val min: Int, val kind: EventKind, val side: Char, val player: String) // side 'A'|'B'
+// side 'A'|'B'; secondYellow: expulsión por doble amarilla (roja indirecta)
+data class MatchEvent(val min: Int, val kind: EventKind, val side: Char, val player: String, val secondYellow: Boolean = false)
 
 /** XI titular confirmado de ambos equipos (FIFA lo publica ~1 h antes del partido). */
 data class LineupPlayer(
