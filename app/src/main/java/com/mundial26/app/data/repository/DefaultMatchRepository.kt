@@ -67,15 +67,15 @@ class DefaultMatchRepository(
                 addedLabel = null, scoreA = newScoreA, scoreB = newScoreB)
         }
         val promoted = if (info.inPlay && status != MatchStatus.FINISHED) MatchStatus.LIVE else status
-        // FIFA no siempre publica el descuento: si falta, se estima con el reloj.
-        val added = info.addedLabel ?: estimatedAddedLabel(info.period, kickoff)
+        // Descuento CORRIENDO (para que el globo rojo cuente 91', 92'…): del MatchTime de
+        // FIFA o estimado con el reloj si no lo publica.
+        val running = info.addedLabel ?: estimatedAddedLabel(info.period, kickoff)
         return copy(
             status = promoted,
             minute = info.minute ?: minute ?: (if (promoted == MatchStatus.LIVE) 1 else null),
-            // Globo rojo corriendo también en el descuento (45' + "+2" → 47');
-            // el añadido queda además en el globo azul.
-            minuteLabel = info.timeLabel.takeIf { it.isNotBlank() }?.let { runningMinuteLabel(it, added) },
-            addedLabel = added,
+            minuteLabel = info.timeLabel.takeIf { it.isNotBlank() }?.let { runningMinuteLabel(it, running) },
+            // Globo azul: el total ANUNCIADO fijo ("+9") si el feed lo trae; si no, el corriendo.
+            addedLabel = info.announcedExtra?.let { "+$it" } ?: running,
             scoreA = newScoreA,
             scoreB = newScoreB
         )

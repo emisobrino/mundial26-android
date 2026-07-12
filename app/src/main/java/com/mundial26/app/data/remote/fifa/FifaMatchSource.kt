@@ -91,7 +91,8 @@ data class FifaLiveInfo(
     val status: Int = 1,                // 3 = en juego, 0 = terminado, 1 = por empezar
     val period: Int = 0,                // 3=1erT, 4=ET, 5=2doT, 10=fin, 11/13=alargue, 12=descanso alargue
     val timeLabel: String = "",         // base: "45'", "ET", "90'" (frena en cortes)
-    val addedLabel: String? = null      // descuento actual: "+2" (globo azul), null si no hay
+    val addedLabel: String? = null,     // descuento CORRIENDO: "+2" del MatchTime, null si no hay
+    val announcedExtra: Int? = null     // descuento ANUNCIADO del período (FirstHalf/SecondHalfExtraTime), si el feed lo publica
 ) {
     val inPlay: Boolean get() = status == 3
 }
@@ -326,7 +327,13 @@ fun parseFifaLive(json: String): List<FifaLiveInfo> =
                 scoreHome = str(home, "Score")?.toIntOrNull(), scoreAway = str(away, "Score")?.toIntOrNull(),
                 status = str(m, "MatchStatus")?.toIntOrNull() ?: 1,
                 period = period, timeLabel = fifaLiveLabel(period, matchTime),
-                addedLabel = fifaAddedLabel(period, matchTime)
+                addedLabel = fifaAddedLabel(period, matchTime),
+                // Total anunciado por el 4to árbitro, si el feed lo trae (suele venir null).
+                announcedExtra = when (period) {
+                    3 -> str(m, "FirstHalfExtraTime")?.toIntOrNull()
+                    5 -> str(m, "SecondHalfExtraTime")?.toIntOrNull()
+                    else -> null
+                }?.takeIf { it > 0 }
             )
         }.getOrNull()
     } ?: emptyList()

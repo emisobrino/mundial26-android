@@ -256,6 +256,23 @@ class FifaMatchSourceTest {
         assertTrue(live[0].inPlay)   // MatchStatus 3 = en juego
     }
 
+    @Test fun descuento_anunciado_solo_en_el_periodo_que_corresponde() {
+        val json = """
+            {"Results":[
+              {"IdMatch":"1","MatchTime":"90'+2'","MatchStatus":3,"Period":5,"SecondHalfExtraTime":9,
+               "HomeTeam":{"IdTeam":"a","Score":1,"Abbreviation":"ARG"},"AwayTeam":{"IdTeam":"b","Score":0,"Abbreviation":"SUI"}},
+              {"IdMatch":"2","MatchTime":"45'+1'","MatchStatus":3,"Period":3,"SecondHalfExtraTime":9,
+               "HomeTeam":{"IdTeam":"c","Score":0,"Abbreviation":"FRA"},"AwayTeam":{"IdTeam":"d","Score":0,"Abbreviation":"ESP"}}
+            ]}
+        """.trimIndent()
+        val live = parseFifaLive(json)
+        // 2doT: anunciado +9 fijo; el corriendo "+2" queda aparte para el globo rojo (92').
+        assertEquals(9, live[0].announcedExtra)
+        assertEquals("+2", live[0].addedLabel)
+        // 1erT: el SecondHalfExtraTime no aplica todavía.
+        assertNull(live[1].announcedExtra)
+    }
+
     @Test fun live_distingue_en_juego_de_por_empezar_y_terminado() {
         val json = """
             {"Results":[
