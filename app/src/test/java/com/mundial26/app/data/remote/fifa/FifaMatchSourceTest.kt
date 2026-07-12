@@ -34,6 +34,16 @@ class FifaMatchSourceTest {
         assertNull(fifaAddedLabel(4, "45'+2'"))
     }
 
+    // ---------- addedPillLabel (globo azul: anunciado fijo, superado por el corriendo) ----------
+
+    @Test fun globo_azul_anunciado_fijo_y_estirado() {
+        assertEquals("+9", addedPillLabel(9, "+2"))     // anunciaron 9, van +2 → fijo en +9
+        assertEquals("+10", addedPillLabel(9, "+10"))   // se estiró más de lo anunciado → acompaña
+        assertEquals("+3", addedPillLabel(null, "+3"))  // sin anunciado → el corriendo
+        assertEquals("+9", addedPillLabel(9, null))     // anunciado recién publicado, sin corriendo aún
+        assertNull(addedPillLabel(null, null))
+    }
+
     // ---------- runningMinuteLabel (globo rojo corriendo en el descuento) ----------
 
     @Test fun minuto_corre_durante_el_descuento() {

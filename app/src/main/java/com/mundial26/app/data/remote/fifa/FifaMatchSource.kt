@@ -143,6 +143,16 @@ fun daysAround(day: String?): Set<String> {
 }
 
 /**
+ * Globo azul: el total anunciado fijo ("+9"); si el descuento real se estira más allá
+ * de lo anunciado, lo acompaña ("+10", "+11"…). Sin anunciado, el corriendo tal cual.
+ */
+fun addedPillLabel(announced: Int?, running: String?): String? {
+    if (announced == null) return running
+    val run = running?.removePrefix("+")?.toIntOrNull() ?: 0
+    return "+${maxOf(announced, run)}"
+}
+
+/**
  * Globo rojo corriendo durante el descuento: base "45'" + añadido "+2" → "47'".
  * Etiquetas no numéricas ("ET", "Penales") o sin añadido quedan igual.
  */

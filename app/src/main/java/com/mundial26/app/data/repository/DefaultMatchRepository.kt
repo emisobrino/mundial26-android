@@ -8,6 +8,7 @@ import com.mundial26.app.data.mock.MockData
 import com.mundial26.app.data.remote.fifa.FifaLiveInfo
 import com.mundial26.app.data.remote.fifa.FifaMatchSource
 import com.mundial26.app.data.remote.fifa.daysAround
+import com.mundial26.app.data.remote.fifa.addedPillLabel
 import com.mundial26.app.data.remote.fifa.estimatedAddedLabel
 import com.mundial26.app.data.remote.fifa.runningMinuteLabel
 import com.mundial26.app.data.remote.openfootball.OpenFootballApi
@@ -74,8 +75,9 @@ class DefaultMatchRepository(
             status = promoted,
             minute = info.minute ?: minute ?: (if (promoted == MatchStatus.LIVE) 1 else null),
             minuteLabel = info.timeLabel.takeIf { it.isNotBlank() }?.let { runningMinuteLabel(it, running) },
-            // Globo azul: el total ANUNCIADO fijo ("+9") si el feed lo trae; si no, el corriendo.
-            addedLabel = info.announcedExtra?.let { "+$it" } ?: running,
+            // Globo azul: el total ANUNCIADO fijo ("+9"), superado por el corriendo si el
+            // descuento se estira ("+10"); sin anunciado, el corriendo.
+            addedLabel = addedPillLabel(info.announcedExtra, running),
             scoreA = newScoreA,
             scoreB = newScoreB
         )
