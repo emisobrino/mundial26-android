@@ -35,4 +35,14 @@ class DbMappersTest {
         val m = e.toDomain()
         assertEquals("fecha-rota", m.day)
     }
+
+    @Test fun status_basura_con_marcador_y_fecha_pasada_es_finalizado() {
+        // Caso real: la fuente trajo la fecha en el campo status → statusOf lo daba como próximo.
+        val e = MatchEntity("4","2026-07-06T01:00:00Z","2026-07-06 01:00:00Z","LAST_16","","MEX","ENG",2,3)
+        val now = java.time.Instant.parse("2026-07-11T12:00:00Z").toEpochMilli()
+        assertEquals(MatchStatus.FINISHED, e.toDomain(now).status)
+        // Un próximo de verdad (sin marcador) no se toca aunque el status sea raro.
+        val e2 = MatchEntity("5","2026-07-14T19:00:00Z","TIMED","SEMI_FINALS","","FRA","ESP",null,null)
+        assertEquals(MatchStatus.UPCOMING, e2.toDomain(now).status)
+    }
 }

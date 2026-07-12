@@ -21,11 +21,25 @@ fun StandingEntity.toDomain() = GroupRow(code = tla, flag = tlaToIso(tla), pj = 
 fun List<StandingEntity>.toGroups(): List<Group> =
     groupBy { it.grp }.map { (g, rows) -> Group(g.replace("Group ", "Grupo "), rows.sortedBy { it.position }.map { it.toDomain() }) }
 
+/**
+ * Estado saneado: la fuente a veces trae basura en `status` (se vio una fecha en vez del
+ * estado), que statusOf clasifica como "próximo". Un partido con marcador cargado y kickoff
+ * pasado hace más de 3 h está terminado, diga lo que diga el campo.
+ */
+fun MatchEntity.effectiveStatus(nowEpochMs: Long = System.currentTimeMillis()): MatchStatus {
+    val st = statusOf(status)
+    if (st == MatchStatus.UPCOMING && scoreHome != null && scoreAway != null) {
+        val ko = runCatching { java.time.Instant.parse(utcDate).toEpochMilli() }.getOrNull()
+        if (ko != null && nowEpochMs - ko > 3 * 60 * 60 * 1000L) return MatchStatus.FINISHED
+    }
+    return st
+}
+
 fun MatchEntity.toDomain(
     nowEpochMs: Long = System.currentTimeMillis(),
     zone: java.time.ZoneId = java.time.ZoneId.systemDefault()
 ): Match {
-    val st = statusOf(status)
+    val st = effectiveStatus(nowEpochMs)
     // Hora y día en la zona horaria del dispositivo (la API da UTC).
     val local = runCatching { java.time.Instant.parse(utcDate).atZone(zone) }.getOrNull()
     return Match(
@@ -66,7 +80,7 @@ fun List<MatchEntity>.toBracket(zone: java.time.ZoneId = java.time.ZoneId.system
                         a = m.homeTla, b = m.awayTla,
                         flagA = tlaToIso(m.homeTla), flagB = tlaToIso(m.awayTla),
                         sa = m.scoreHome, sb = m.scoreAway,
-                        done = statusOf(m.status) == MatchStatus.FINISHED,
+                        done = m.effectiveStatus() == MatchStatus.FINISHED,
                         pa = m.penHome, pb = m.penAway,
                         id = m.id,
                         day = local?.toLocalDate()?.toString() ?: m.utcDate.take(10),
