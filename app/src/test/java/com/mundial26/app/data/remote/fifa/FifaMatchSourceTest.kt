@@ -87,6 +87,22 @@ class FifaMatchSourceTest {
         assertEquals("Julian Quinones", extractEventPlayer(0, "¡Goool de Julian QUINONES (México)!"))
         assertEquals("Teboho Mokoena", extractEventPlayer(2, "El árbitro amonesta a Teboho MOKOENA (Sudáfrica)."))
         assertEquals("Sphephelo Sithole", extractEventPlayer(3, "¡Tarjeta roja y expulsión de Sphephelo SITHOLE (Sudáfrica)!"))
+        // Caso real ARG-SUI: expulsión por doble amarilla (Type 4).
+        assertEquals("Breel Embolo", extractEventPlayer(4, "¡Breel EMBOLO (Suiza) es expulsado por doble amonestación!"))
+    }
+
+    @Test fun timeline_mapea_doble_amarilla_como_roja() {
+        val json = """
+            {"Event":[
+              {"Type":4,"MatchMinute":"72'","IdTeam":"43971","EventDescription":[{"Description":"¡Breel EMBOLO (Suiza) es expulsado por doble amonestación!"}]}
+            ]}
+        """.trimIndent()
+        val evs = parseFifaTimeline(json, homeTeamId = "43922")
+        assertEquals(1, evs.size)
+        assertEquals(EventKind.RED, evs[0].kind)
+        assertEquals(72, evs[0].min)
+        assertEquals("Breel Embolo", evs[0].player)
+        assertEquals('B', evs[0].side)
     }
 
     @Test fun extrae_cambio_con_ambos_jugadores() {
