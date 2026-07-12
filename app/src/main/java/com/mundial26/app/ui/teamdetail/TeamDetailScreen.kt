@@ -45,9 +45,11 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mundial26.app.R
 import com.mundial26.app.data.mock.FakeTeamRepository
+import com.mundial26.app.domain.model.Match
 import com.mundial26.app.domain.model.Player
 import com.mundial26.app.domain.model.Team
 import com.mundial26.app.ui.components.FlagAvatar
+import com.mundial26.app.ui.components.MatchRow
 import com.mundial26.app.ui.theme.MundialTheme
 
 /**
@@ -60,9 +62,11 @@ fun TeamDetailScreen(
     onBack: () -> Unit,
     onPlayerClick: (String) -> Unit,
     onSquadPlayerClick: (Long) -> Unit,
+    onMatchClick: (String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val matches by viewModel.matches.collectAsStateWithLifecycle()
 
     Column(
         modifier = modifier
@@ -79,8 +83,10 @@ fun TeamDetailScreen(
             )
             is TeamDetailUiState.Success -> TeamDetailContent(
                 team = current.team,
+                matches = matches,
                 onPlayerClick = onPlayerClick,
-                onSquadPlayerClick = onSquadPlayerClick
+                onSquadPlayerClick = onSquadPlayerClick,
+                onMatchClick = onMatchClick
             )
         }
     }
@@ -142,8 +148,10 @@ private fun ErrorContent(
 @Composable
 private fun TeamDetailContent(
     team: Team,
+    matches: List<Match>,
     onPlayerClick: (String) -> Unit,
     onSquadPlayerClick: (Long) -> Unit,
+    onMatchClick: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     LazyColumn(
@@ -167,8 +175,33 @@ private fun TeamDetailContent(
         if (team.form.isNotEmpty()) {
             item { FormSection(form = team.form) }
         }
+        if (matches.isNotEmpty()) {
+            item { TeamMatchesSection(matches = matches, onMatchClick = onMatchClick) }
+        }
         if (team.squad.isNotEmpty()) {
             item { SquadSection(squad = team.squad, coach = team.coach, onSquadPlayerClick = onSquadPlayerClick) }
+        }
+    }
+}
+
+/** Recorrido de la selección en el Mundial: sus partidos (jugados y próximos) en orden cronológico. */
+@Composable
+private fun TeamMatchesSection(
+    matches: List<Match>,
+    onMatchClick: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier.fillMaxWidth()) {
+        Text(
+            text = "PARTIDOS EN EL MUNDIAL",
+            style = MaterialTheme.typography.labelLarge,
+            color = MundialTheme.colors.textTertiary
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            matches.forEach { match ->
+                MatchRow(match = match, onClick = { onMatchClick(match.id) })
+            }
         }
     }
 }

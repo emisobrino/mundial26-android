@@ -4,7 +4,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import com.mundial26.app.domain.model.Match
 import com.mundial26.app.domain.model.Team
+import com.mundial26.app.domain.repository.MatchRepository
 import com.mundial26.app.domain.repository.TeamRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -19,11 +21,16 @@ sealed interface TeamDetailUiState {
 
 class TeamDetailViewModel(
     private val teamRepository: TeamRepository,
-    private val teamId: String
+    private val teamId: String,
+    private val matchRepository: MatchRepository? = null
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<TeamDetailUiState>(TeamDetailUiState.Loading)
     val uiState: StateFlow<TeamDetailUiState> = _uiState.asStateFlow()
+
+    // Partidos de esta selección en el Mundial (jugados + próximos), en orden cronológico.
+    private val _matches = MutableStateFlow<List<Match>>(emptyList())
+    val matches: StateFlow<List<Match>> = _matches.asStateFlow()
 
     init { load() }
 
@@ -49,11 +56,23 @@ class TeamDetailViewModel(
                 _uiState.value = TeamDetailUiState.Error(e.message ?: "Error al cargar el equipo")
             }
         }
+        val repo = matchRepository ?: return
+        viewModelScope.launch {
+            val code = teamId.uppercase()
+            _matches.value = runCatching { repo.byDay() }.getOrDefault(emptyMap())
+                .values.flatten()
+                .filter { it.teamA == code || it.teamB == code }
+                .sortedBy { it.kickoff }
+        }
     }
 
     companion object {
-        fun Factory(teamRepository: TeamRepository, teamId: String) = viewModelFactory {
-            initializer { TeamDetailViewModel(teamRepository, teamId) }
+        fun Factory(
+            teamRepository: TeamRepository,
+            teamId: String,
+            matchRepository: MatchRepository? = null
+        ) = viewModelFactory {
+            initializer { TeamDetailViewModel(teamRepository, teamId, matchRepository) }
         }
     }
 }

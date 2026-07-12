@@ -223,13 +223,14 @@ fun MundialApp(container: AppContainer) {
             ) { entry ->
                 val id = entry.arguments?.getString(DetailRoutes.TEAM_ARG).orEmpty()
                 val vm: TeamDetailViewModel = viewModel(
-                    factory = TeamDetailViewModel.Factory(container.teamRepository, id)
+                    factory = TeamDetailViewModel.Factory(container.teamRepository, id, container.matchRepository)
                 )
                 TeamDetailScreen(
                     viewModel = vm,
                     onBack = { navController.popBackStack() },
                     onPlayerClick = { teamId -> navController.navigate(DetailRoutes.playerDetail(teamId)) },
-                    onSquadPlayerClick = { playerId -> navController.navigate(DetailRoutes.playerById(playerId)) }
+                    onSquadPlayerClick = { playerId -> navController.navigate(DetailRoutes.playerById(playerId)) },
+                    onMatchClick = { matchId -> navController.navigate(DetailRoutes.matchDetail(matchId)) }
                 )
             }
             composable(
