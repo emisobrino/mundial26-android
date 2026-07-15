@@ -37,6 +37,44 @@ class YoutubeHighlightsSourceTest {
         assertEquals("resumen0001", rankCandidates(candidates)[0].id)
     }
 
+    @Test fun descarta_el_resumen_de_otro_partido_aunque_coincida_el_marcador() {
+        // Caso real ENG-ARG: NOR-ENG tambien termino 1-2, asi que el marcador no alcanzaba;
+        // el titulo de ese resumen no nombra a Argentina → queda fuera.
+        val candidates = listOf(
+            YtCandidate("noreng0001", "ESPN Fans", "EL DOBLETE DE BELLINGHAM | Noruega 1-2 Inglaterra | RESUMEN | M99"),
+            YtCandidate("engarg0001", "ESPN Fans", "ARGENTINA SE QUEDÓ CON EL MEJOR PARTIDO | Inglaterra 1-2 Argentina | RESUMEN | M102")
+        )
+        val ranked = rankCandidates(candidates, "Inglaterra", "Argentina", "1-2")
+        assertEquals(1, ranked.size)
+        assertEquals("engarg0001", ranked[0].id)
+    }
+
+    @Test fun sin_resumen_de_espn_queda_el_de_dsports() {
+        // Mientras ESPN no sube el resumen, DSports es el respaldo; los clips sueltos no.
+        val candidates = listOf(
+            YtCandidate("clip000001", "ESPN Fans", "GOLAZO DE ENZO PARA IGUALAR ANTE INGLATERRA | Inglaterra 1-1 Argentina"),
+            YtCandidate("dsports001", "DSports", "#ARGENTINA EN LA FINAL!!! | Inglaterra 1-2 Argentina | Resumen")
+        )
+        val ranked = rankCandidates(candidates, "Inglaterra", "Argentina", "1-2")
+        assertEquals("dsports001", ranked[0].id)
+    }
+
+    @Test fun cuando_espn_sube_el_suyo_le_gana_al_de_dsports() {
+        val candidates = listOf(
+            YtCandidate("dsports001", "DSports", "#ARGENTINA EN LA FINAL!!! | Inglaterra 1-2 Argentina | Resumen"),
+            YtCandidate("espn000001", "ESPN Fans", "EL MEJOR PARTIDO | Inglaterra 1-2 Argentina | RESUMEN | M102")
+        )
+        val ranked = rankCandidates(candidates, "Inglaterra", "Argentina", "1-2")
+        assertEquals("espn000001", ranked[0].id)
+    }
+
+    @Test fun alias_de_pais_en_el_titulo() {
+        val candidates = listOf(
+            YtCandidate("hol0000001", "ESPN Fans", "Holanda 2-1 Brasil | RESUMEN")
+        )
+        assertEquals(1, rankCandidates(candidates, "Países Bajos", "Brasil", "2-1").size)
+    }
+
     @Test fun parsea_id_canal_y_titulo() {
         val html = """
             {"videoRenderer":{"videoId":"abcdefghijk","title":{"runs":[{"text":"Argentina 3-1 Suiza | RESUMEN"}]},

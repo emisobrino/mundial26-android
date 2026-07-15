@@ -119,9 +119,11 @@ class MatchDetailViewModel(
         val match = cur.match
         if (cur.highlightVideoId != null) return
         if (match.status != MatchStatus.FINISHED || match.teamA.isBlank() || match.teamB.isBlank()) return
-        val query = "${Nations.name(match.teamA)} ${Nations.name(match.teamB)} Mundial 2026 resumen ESPN"
+        // Sin "ESPN" en la búsqueda: sesgaba los resultados y escondía el resumen del partido.
+        val teamA = Nations.name(match.teamA); val teamB = Nations.name(match.teamB)
+        val query = "$teamA $teamB Mundial 2026 resumen"
         val scoreLine = if (match.scoreA != null && match.scoreB != null) "${match.scoreA}-${match.scoreB}" else null
-        val videoId = runCatching { highlights.firstVideoId(query, scoreLine) }.getOrNull() ?: return
+        val videoId = runCatching { highlights.firstVideoId(query, teamA, teamB, scoreLine) }.getOrNull() ?: return
         (_uiState.value as? MatchDetailUiState.Success)?.let { _uiState.value = it.copy(highlightVideoId = videoId) }
     }
 

@@ -36,24 +36,68 @@ private val OTHER_COMP = listOf(
     "eurocopa", "eliminatori", "clasificatori", "qualifier"
 )
 
+/** Canal principal; DSports es el respaldo mientras ESPN no sube el resumen. */
+private fun channelScore(channel: String): Int = when {
+    channel.contains("ESPN", ignoreCase = true) -> 2
+    channel.contains("DSports", ignoreCase = true) || channel.contains("DirecTV", ignoreCase = true) -> 1
+    else -> 0
+}
+
+/** Sin acentos y en minúsculas, para comparar títulos con nombres de países. */
+private fun norm(s: String): String =
+    java.text.Normalizer.normalize(s, java.text.Normalizer.Form.NFD)
+        .replace(Regex("\\p{Mn}+"), "").lowercase()
+
+// Nombres alternativos con los que los canales titulan a algunas selecciones.
+private val TEAM_ALIASES = mapOf(
+    "paises bajos" to listOf("paises bajos", "holanda"),
+    "estados unidos" to listOf("estados unidos", "usa", "eeuu"),
+    "corea del sur" to listOf("corea"),
+    "costa de marfil" to listOf("marfil"),
+    "rd del congo" to listOf("congo"),
+    "bosnia y herzegovina" to listOf("bosnia")
+)
+
+/** true si el título nombra a [team] (tolerando acentos y alias tipo "Holanda"). */
+private fun mentionsTeam(team: String, normTitle: String): Boolean {
+    val t = norm(team)
+    return (TEAM_ALIASES[t] ?: listOf(t)).any { it in normTitle }
+}
+
 /**
- * Ranking del resumen correcto. Señal decisiva: el MARCADOR real del partido, que el título
- * del resumen casi siempre lleva ("Francia 0-2 España"); así se descarta un mismo cruce de otra
- * competición (FRA-ESP 5-4 Nations League). Luego "resumen" en el título (vs. clips de gol),
- * el canal ESPN, y una penalización si el título menciona otro torneo.
+ * Ranking del resumen correcto.
+ *
+ * Filtro duro: el título debe nombrar a AMBOS equipos. Sin esto se colaba el resumen de
+ * otro partido del mismo equipo (ENG-ARG traía "Noruega 1-2 Inglaterra": los dos terminaron
+ * 1-2, así que ni el marcador lo distinguía). Preferimos no mostrar video antes que el
+ * equivocado: la pantalla ya cae al botón "Ver resumen en YouTube".
+ *
+ * Entre los que quedan: "resumen" en el título (vs. clips de gol sueltos), el marcador real
+ * —que descarta el mismo cruce en otra competición (FRA-ESP 5-4 Nations League)—, y el canal
+ * (ESPN primero; DSports como respaldo hasta que ESPN suba el suyo).
  */
-fun rankCandidates(candidates: List<YtCandidate>, scoreLine: String? = null): List<YtCandidate> {
-    // Marcador en ambos órdenes: el título puede venir "0-2" o "2-0" según qué equipo liste primero.
+fun rankCandidates(
+    candidates: List<YtCandidate>,
+    teamA: String? = null,
+    teamB: String? = null,
+    scoreLine: String? = null
+): List<YtCandidate> {
+    // Marcador en ambos órdenes: el título puede venir "1-2" o "2-1" según qué equipo liste primero.
     val scores = scoreLine?.split("-")?.map { it.trim() }?.takeIf { it.size == 2 && it.all(String::isNotBlank) }
         ?.let { (a, b) -> setOf("$a-$b", "$b-$a") } ?: emptySet()
-    return candidates.sortedByDescending { c ->
-        val title = c.title.lowercase()
-        val noSpace = title.replace(" ", "")
-        (if (scores.any { noSpace.contains(it) }) 8 else 0) +
-            (if ("resumen" in title) 2 else 0) +
-            (if (c.channel.contains("ESPN", ignoreCase = true)) 1 else 0) +
-            (if (OTHER_COMP.any { it in title }) -6 else 0)
-    }
+    return candidates
+        .filter { c ->
+            if (teamA.isNullOrBlank() || teamB.isNullOrBlank()) true
+            else norm(c.title).let { mentionsTeam(teamA, it) && mentionsTeam(teamB, it) }
+        }
+        .sortedByDescending { c ->
+            val title = norm(c.title)
+            val noSpace = title.replace(" ", "")
+            (if ("resumen" in title) 4 else 0) +
+                (if (scores.any { noSpace.contains(it) }) 3 else 0) +
+                channelScore(c.channel) +
+                (if (OTHER_COMP.any { it in title }) -6 else 0)
+        }
 }
 
 /**
@@ -79,24 +123,33 @@ class YoutubeHighlightsSource(
         prefs?.all?.forEach { (k, v) -> if (v is String) put(k, v) }
     }
 
-    suspend fun firstVideoId(query: String, scoreLine: String? = null): String? = withContext(Dispatchers.IO) {
+    suspend fun firstVideoId(
+        query: String,
+        teamA: String? = null,
+        teamB: String? = null,
+        scoreLine: String? = null
+    ): String? = withContext(Dispatchers.IO) {
         cache[query]?.let { return@withContext it }
-        val id = runCatching {
+        val picked = runCatching {
             val candidates = parseCandidates(searchHtml(query))
-            if (candidates.isEmpty()) return@runCatching null
-            val ordered = rankCandidates(candidates, scoreLine).take(4)
+            val ordered = rankCandidates(candidates, teamA, teamB, scoreLine).take(4)
+            if (ordered.isEmpty()) return@runCatching null
             // Comprobar embebibilidad en paralelo (antes eran hasta 6 peticiones oEmbed en serie).
             val checks = coroutineScope {
-                ordered.map { c -> async { c.id to isEmbeddable(c.id) } }.awaitAll()
+                ordered.map { c -> async { c to isEmbeddable(c.id) } }.awaitAll()
             }
             // Devolver el primero (en orden de prioridad) que permita embeber; si ninguno, el primero.
-            checks.firstOrNull { it.second }?.first ?: ordered.first().id
+            checks.firstOrNull { it.second }?.first ?: ordered.first()
         }.getOrNull()
-        if (id != null) {
-            cache[query] = id
-            prefs?.edit()?.putString(query, id)?.apply()
+        if (picked != null) {
+            cache[query] = picked.id
+            // Solo se persiste el del canal principal (ESPN). Si quedó el de respaldo porque
+            // ESPN todavía no lo subió, en el próximo arranque se rebusca y se actualiza.
+            if (picked.channel.contains("ESPN", ignoreCase = true)) {
+                prefs?.edit()?.putString(query, picked.id)?.apply()
+            }
         }
-        id
+        picked?.id
     }
 
     private fun searchHtml(query: String): String {
