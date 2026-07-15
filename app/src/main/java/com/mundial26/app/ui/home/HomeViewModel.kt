@@ -74,7 +74,8 @@ class HomeViewModel(
             .map { m ->
                 async {
                     val query = "${Nations.name(m.teamA)} ${Nations.name(m.teamB)} Mundial 2026 resumen ESPN"
-                    runCatching { highlightsSource.firstVideoId(query) }.getOrNull()
+                    val scoreLine = if (m.scoreA != null && m.scoreB != null) "${m.scoreA}-${m.scoreB}" else null
+                    runCatching { highlightsSource.firstVideoId(query, scoreLine) }.getOrNull()
                         ?.let { MatchHighlight(m, it) }
                 }
             }

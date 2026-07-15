@@ -29,15 +29,32 @@ fun parseCandidates(html: String): List<YtCandidate> {
     return out.values.toList()
 }
 
+// Competiciones que NO son este Mundial: mismos rivales, otro partido (ej. FRA-ESP 5-4 de
+// la Nations League 2024). El marcador ya los distingue; esto es un desempate extra.
+private val OTHER_COMP = listOf(
+    "nations league", "liga de naciones", "amistoso", "friendly",
+    "eurocopa", "eliminatori", "clasificatori", "qualifier"
+)
+
 /**
- * Ranking: el RESUMEN del partido antes que clips sueltos ("¡GOL DE...!") — ESPN sube
- * ambos y el primer resultado suele ser el clip. Título "resumen" pesa más que el canal.
+ * Ranking del resumen correcto. Señal decisiva: el MARCADOR real del partido, que el título
+ * del resumen casi siempre lleva ("Francia 0-2 España"); así se descarta un mismo cruce de otra
+ * competición (FRA-ESP 5-4 Nations League). Luego "resumen" en el título (vs. clips de gol),
+ * el canal ESPN, y una penalización si el título menciona otro torneo.
  */
-fun rankCandidates(candidates: List<YtCandidate>): List<YtCandidate> =
-    candidates.sortedByDescending { c ->
-        (if (c.title.contains("resumen", ignoreCase = true)) 2 else 0) +
-            (if (c.channel.contains("ESPN", ignoreCase = true)) 1 else 0)
+fun rankCandidates(candidates: List<YtCandidate>, scoreLine: String? = null): List<YtCandidate> {
+    // Marcador en ambos órdenes: el título puede venir "0-2" o "2-0" según qué equipo liste primero.
+    val scores = scoreLine?.split("-")?.map { it.trim() }?.takeIf { it.size == 2 && it.all(String::isNotBlank) }
+        ?.let { (a, b) -> setOf("$a-$b", "$b-$a") } ?: emptySet()
+    return candidates.sortedByDescending { c ->
+        val title = c.title.lowercase()
+        val noSpace = title.replace(" ", "")
+        (if (scores.any { noSpace.contains(it) }) 8 else 0) +
+            (if ("resumen" in title) 2 else 0) +
+            (if (c.channel.contains("ESPN", ignoreCase = true)) 1 else 0) +
+            (if (OTHER_COMP.any { it in title }) -6 else 0)
     }
+}
 
 /**
  * Busca en YouTube el resumen de un partido y devuelve el id de un video **embebible**,
@@ -62,12 +79,12 @@ class YoutubeHighlightsSource(
         prefs?.all?.forEach { (k, v) -> if (v is String) put(k, v) }
     }
 
-    suspend fun firstVideoId(query: String): String? = withContext(Dispatchers.IO) {
+    suspend fun firstVideoId(query: String, scoreLine: String? = null): String? = withContext(Dispatchers.IO) {
         cache[query]?.let { return@withContext it }
         val id = runCatching {
             val candidates = parseCandidates(searchHtml(query))
             if (candidates.isEmpty()) return@runCatching null
-            val ordered = rankCandidates(candidates).take(4)
+            val ordered = rankCandidates(candidates, scoreLine).take(4)
             // Comprobar embebibilidad en paralelo (antes eran hasta 6 peticiones oEmbed en serie).
             val checks = coroutineScope {
                 ordered.map { c -> async { c.id to isEmbeddable(c.id) } }.awaitAll()

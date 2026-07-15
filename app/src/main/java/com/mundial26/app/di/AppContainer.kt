@@ -35,7 +35,8 @@ class DefaultAppContainer(context: Context) : AppContainer {
     override val newsRepository: NewsRepository by lazy { DefaultNewsRepository(NewsRssSource()) }
     // Instancia única (Inicio + detalle de partido comparten caché) con persistencia en disco.
     override val youtubeHighlights: YoutubeHighlightsSource by lazy {
-        // "_v2": el ranking cambió (resumen > clip de gol); el caché viejo tenía ids de clips.
-        YoutubeHighlightsSource(prefs = appContext.getSharedPreferences("yt_highlights_v2", Context.MODE_PRIVATE))
+        // "_v3": el ranking desempata por marcador real (descarta el mismo cruce de otra
+        // competición, ej. FRA-ESP 5-4 Nations League); el caché viejo tenía ids equivocados.
+        YoutubeHighlightsSource(prefs = appContext.getSharedPreferences("yt_highlights_v3", Context.MODE_PRIVATE))
     }
 }
