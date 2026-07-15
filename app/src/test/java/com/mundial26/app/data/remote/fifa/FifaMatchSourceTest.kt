@@ -367,6 +367,21 @@ class FifaMatchSourceTest {
         assertTrue(parseFifaMatchStats("basura", "43969").isEmpty())
     }
 
+    // ---------- calendarTtlFor ----------
+
+    @Test fun con_cruces_por_definir_el_calendario_se_revalida_seguido() {
+        fun ref(home: String, away: String) = FifaMatchRef(
+            idMatch = "1", idStage = "s", day = "2026-07-18", utcDate = "2026-07-18T21:00:00Z",
+            homeTla = home, awayTla = away, homeTeamId = "", awayTeamId = "",
+            status = 1, scoreHome = null, scoreAway = null
+        )
+        // La final sin rival confirmado (FIFA la publica en blanco hasta que termina la semi).
+        assertEquals(CALENDAR_TTL_PENDING, calendarTtlFor(listOf(ref("ARG", "SUI"), ref("ESP", ""))))
+        // Ya definido todo: el fixture no cambia más, TTL largo.
+        assertEquals(CALENDAR_TTL, calendarTtlFor(listOf(ref("ARG", "SUI"), ref("ESP", "ARG"))))
+        assertEquals(CALENDAR_TTL, calendarTtlFor(emptyList()))
+    }
+
     @Test fun json_invalido_no_explota() {
         assertTrue(parseFifaCalendar("{}").isEmpty())
         assertTrue(parseFifaTimeline("{}", "x").isEmpty())

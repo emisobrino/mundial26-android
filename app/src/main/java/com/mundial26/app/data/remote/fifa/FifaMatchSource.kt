@@ -219,6 +219,17 @@ fun parseFifaCalendar(json: String): List<FifaMatchRef> =
         }.getOrNull()
     } ?: emptyList()
 
+const val CALENDAR_TTL = 6 * 60 * 60 * 1000L        // todo definido: el fixture ya no cambia
+const val CALENDAR_TTL_PENDING = 5 * 60 * 1000L     // hay cruces por definir
+
+/**
+ * Cuánto vale el calendario cacheado. Con algún cruce sin definir (FIFA lo publica sin
+ * equipos hasta que termina el partido anterior) se revalida seguido, así el rival aparece
+ * a los minutos de terminar la semi y no hasta 6 h después. Definido todo, TTL largo.
+ */
+fun calendarTtlFor(cal: List<FifaMatchRef>): Long =
+    if (cal.any { it.homeTla.isBlank() || it.awayTla.isBlank() }) CALENDAR_TTL_PENDING else CALENDAR_TTL
+
 /** Eventos de dominio del timeline FIFA; `homeTeamId` decide el lado A/B. */
 fun parseFifaTimeline(json: String, homeTeamId: String): List<MatchEvent> =
     AppJson.parseToJsonElement(json).jsonObject["Event"]?.jsonArray?.mapNotNull { el ->
@@ -358,7 +369,6 @@ fun parseFifaLive(json: String): List<FifaLiveInfo> =
 class FifaMatchSource(private val client: OkHttpClient = OkHttpClient()) {
     private var calendarCache: List<FifaMatchRef> = emptyList()
     private var calendarAt = 0L
-    private val calendarTtl = 6 * 60 * 60 * 1000L
     private val timelineCache = mutableMapOf<String, Pair<Long, List<MatchEvent>>>()
     private val timelineTtl = 2 * 60 * 1000L
 
@@ -368,7 +378,7 @@ class FifaMatchSource(private val client: OkHttpClient = OkHttpClient()) {
         }
 
     private suspend fun calendar(): List<FifaMatchRef> = withContext(Dispatchers.IO) {
-        if (calendarCache.isNotEmpty() && System.currentTimeMillis() - calendarAt < calendarTtl) return@withContext calendarCache
+        if (calendarCache.isNotEmpty() && System.currentTimeMillis() - calendarAt < calendarTtlFor(calendarCache)) return@withContext calendarCache
         val parsed = runCatching {
             get("https://api.fifa.com/api/v3/calendar/matches?idSeason=$SEASON&idCompetition=$COMP&language=es&count=200")
                 ?.let(::parseFifaCalendar).orEmpty()
